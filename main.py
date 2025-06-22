@@ -1,217 +1,158 @@
-#!/usr/bin/env python3
-
-import asyncio
-import logging
-from typing import Any
-
-import aiohttp
-import mcp.server.stdio
-from bs4 import BeautifulSoup
-from mcp.server import NotificationOptions, Server
-from mcp.server.models import InitializationOptions
-from mcp.types import Tool, TextContent, CallToolResult
-
-from param_job_agent import ParamJobAgent
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("param-job-agent")
-
-
-# MCP Server setup
-app = Server("param-fintech-jobs")
-job_agent = ParamJobAgent()
-
-@app.list_tools()
-async def handle_list_tools() -> list[Tool]:
-    """List available tools"""
-    return [
-        Tool(
-            name="set_profile",
-            description="Set your professional profile (skills, experience, qualifications)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "skills": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Your technical and professional skills"
-                    },
-                    "experience": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Your work experience areas"
-                    },
-                    "qualifications": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Your qualifications and certifications"
-                    },
-                    "min_salary": {
-                        "type": "number",
-                        "description": "Minimum salary requirement in GBP",
-                        "default": 50000
-                    }
-                }
-            }
-        ),
-        Tool(
-            name="search_fintech_jobs",
-            description="Search for fintech job opportunities matching your profile",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "limit": {
-                        "type": "number",
-                        "description": "Maximum number of jobs to return",
-                        "default": 20
-                    }
-                }
-            }
-        ),
-        Tool(
-            name="get_job_details",
-            description="Get detailed information about a specific job",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "URL of the job posting"
-                    }
-                },
-                "required": ["url"]
-            }
-        )
-    ]
-
-@app.call_tool()
-async def handle_call_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
-    """Handle tool calls"""
-    try:
-        if name == "set_profile":
-            job_agent.set_user_profile(arguments)
-            return CallToolResult(
-                content=[
-                    TextContent(
-                        type="text",
-                        text="Profile updated successfully! Ready to search for fintech opportunities."
-                    )
-                ]
-            )
-
-        elif name == "search_fintech_jobs":
-            limit = arguments.get("limit", 20)
-            jobs = await job_agent.search_fintech_jobs(limit)
-
-            if not jobs:
-                return CallToolResult(
-                    content=[
-                        TextContent(
-                            type="text",
-                            text="No fintech jobs found matching your criteria. Try updating your profile or check back later."
-                        )
-                    ]
-                )
-
-            jobs_text = []
-            for job in jobs:
-                job_info = f"""**{job.title}** at {job.company}
-📍 Location: {job.location}
-💰 Salary: {job.salary or 'Not specified'}
-🎯 Match Score: {job.match_score:.1f}/100
-🔗 Source: {job.source}
-🌐 URL: {job.url}
-📝 Description: {job.description[:200]}{'...' if len(job.description) > 200 else ''}
 """
-                jobs_text.append(job_info)
+London Job Search MCP Agent
+===========================
 
-            result_text = f"Found {len(jobs)} fintech job opportunities:\n\n" + "\n---\n\n".join(jobs_text)
+An **MCP (Model‑Context Protocol) server** exposing one tool —
+`search_london_jobs`.  Claude (or any other MCP‑capable client) can call this
+endpoint to retrieve up‑to‑date job postings located in **London, UK**.
 
-            return CallToolResult(
-                content=[
-                    TextContent(
-                        type="text",
-                        text=result_text
-                    )
-                ]
-            )
+Quick‑start
+-----------
+```bash
+# 1) Install requirements
+pip install fastmcp httpx python‑dotenv
 
-        elif name == "get_job_details":
-            url = arguments.get("url")
-            if not url:
-                return CallToolResult(
-                    content=[
-                        TextContent(
-                            type="text",
-                            text="URL is required to fetch job details"
-                        )
-                    ],
-                    isError=True
-                )
+# 2) Create an Adzuna developer account (https://developer.adzuna.com/) and
+#    export your credentials so the tool can authenticate:
+export ADZUNA_APP_ID="your_app_id"
+export ADZUNA_APP_KEY="your_app_key"
 
-            async with aiohttp.ClientSession() as session:
-                html = await job_agent.fetch_page(session, url)
-                if html:
-                    soup = BeautifulSoup(html, 'html.parser')
-                    # Extract main content
-                    content = soup.get_text()[:2000]
-                    return CallToolResult(
-                        content=[
-                            TextContent(
-                                type="text",
-                                text=f"Job Details from {url}:\n\n{content}..."
-                            )
-                        ]
-                    )
-                else:
-                    return CallToolResult(
-                        content=[
-                            TextContent(
-                                type="text",
-                                text=f"Unable to fetch job details from {url}"
-                            )
-                        ],
-                        isError=True
-                    )
-        else:
-            return CallToolResult(
-                content=[
-                    TextContent(
-                        type="text",
-                        text=f"Unknown tool: {name}"
-                    )
-                ],
-                isError=True
-            )
+# 3) Run the MCP server locally (stdio transport)
+python london_job_search_agent.py
+```
 
-    except Exception as e:
-        logger.error(f"Error in tool {name}: {e}")
-        return CallToolResult(
-            content=[
-                TextContent(
-                    type="text",
-                    text=f"Error: {str(e)}"
-                )
-            ],
-            isError=True
+### Claude Desktop integration
+1. **Settings → MCP → Add New MCP Server**
+2. *Type*: **stdio**
+   *Command*: `python`
+   *Args*: `path/to/london_job_search_agent.py`
+   *Name*: *London Job Search*
+3. Save.  Claude will automatically discover the `search_london_jobs` tool.
+
+Example prompt inside Claude:
+```
+Use the search_london_jobs tool to find five recent "machine learning engineer"
+openings and give me a short summary of each.
+```
+
+Return format
+-------------
+`search_london_jobs` returns **List[dict]** where each dict contains:
+* `title`          – Job title
+* `company`        – Hiring company name
+* `location`       – Display location (always a London area)
+* `salary_min`     – Lower salary bound (if provided)
+* `salary_max`     – Upper salary bound (if provided)
+* `contract_type`  – full_time | part_time | contract | etc.
+* `url`            – Direct link to the listing on Adzuna
+* `description`    – First 160‑character snippet of the description
+
+Security note
+-------------
+The server only reaches out to **Adzuna's public HTTPS API** and does not touch
+local files or the network beyond that request.
+"""
+
+from __future__ import annotations
+
+import os
+import textwrap
+from typing import List, Dict, Any
+
+import httpx
+from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
+
+# Load environment variables from a .env file if present (developer convenience)
+load_dotenv()
+
+# ---------------------------------------------------------------------------
+# Initialise the MCP server
+# ---------------------------------------------------------------------------
+
+mcp = FastMCP(name="London Job Search Agent")
+
+
+@mcp.tool(
+    name="search_london_jobs",  # Visible name Claude will reference
+    description=textwrap.dedent(
+        """Search live job vacancies that are **physically located in London, UK**.
+
+        Parameters
+        ----------
+        query : str
+            Free‑text keywords, e.g. "software engineer" or "data scientist".
+        max_results : int, optional (default 10, max 50)
+            How many postings to return.
+        """,
+    ),
+)
+async def search_london_jobs(query: str, max_results: int = 10) -> List[Dict[str, Any]]:
+    """Return a list of current London‑based jobs that match *query*.
+
+    The function queries Adzuna’s REST API (UK endpoint) and extracts the most
+    relevant fields for downstream processing within the LLM conversation.
+    """
+
+    # ---------------------------------------------------------------------
+    # 0) API credentials
+    # ---------------------------------------------------------------------
+    app_id = os.getenv("ADZUNA_APP_ID")
+    app_key = os.getenv("ADZUNA_APP_KEY")
+
+    if app_id is None or app_key is None:
+        raise RuntimeError(
+            "Please set ADZUNA_APP_ID and ADZUNA_APP_KEY environment variables."
         )
 
-async def main():
-    # Run the server using stdin/stdout streams
-    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            InitializationOptions(
-                server_name="param-fintech-jobs",
-                server_version="0.1.0",
-                capabilities=app.get_capabilities(
-                    notification_options=NotificationOptions(),
-                    experimental_capabilities={},
-                ),
-            ),
+    # ---------------------------------------------------------------------
+    # 1) Compose request
+    # ---------------------------------------------------------------------
+    max_results = min(max(max_results, 1), 50)  # Enforce 1–50 bounds
+    endpoint = "https://api.adzuna.com/v1/api/jobs/gb/search/1"
+    params = {
+        "app_id": app_id,
+        "app_key": app_key,
+        "results_per_page": max_results,
+        "what": query,
+        "where": "London",
+        "content-type": "application/json",
+        "sort_by": "date",
+    }
+
+    # ---------------------------------------------------------------------
+    # 2) Fetch data (async HTTP)
+    # ---------------------------------------------------------------------
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.get(endpoint, params=params)
+        response.raise_for_status()
+        payload = response.json()
+
+    # ---------------------------------------------------------------------
+    # 3) Transform into a clean, LLM‑friendly schema
+    # ---------------------------------------------------------------------
+    jobs: List[Dict[str, Any]] = []
+    for item in payload.get("results", []):
+        jobs.append(
+            {
+                "title": item.get("title"),
+                "company": item.get("company", {}).get("display_name"),
+                "location": item.get("location", {}).get("display_name"),
+                "salary_min": item.get("salary_min"),
+                "salary_max": item.get("salary_max"),
+                "contract_type": item.get("contract_type"),
+                "url": item.get("redirect_url"),
+                "description": (item.get("description", "")[:160] + "…"),
+            }
         )
 
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Entry point – run with stdio transport by default
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    asyncio.run(main())
+    # `mcp.run()` automatically selects stdio when launched directly and the
+    # process is connected to a terminal / Claude Desktop.
+    mcp.run()
