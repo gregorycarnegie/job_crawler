@@ -771,16 +771,8 @@ class TestConfiguration:
 
             try:
                 # Should handle various configurations without crashing
-                app_id = os.getenv("ADZUNA_APP_ID")
-                app_key = os.getenv("ADZUNA_APP_KEY")
-
-                # Verify behavior
-                if not app_id or not app_key:
-                    # Should return empty results for missing credentials
-                    pass
-                else:
-                    # Should work with valid credentials
-                    pass
+                _app_id = os.getenv("ADZUNA_APP_ID")
+                _app_key = os.getenv("ADZUNA_APP_KEY")
 
             finally:
                 # Restore original environment
