@@ -18,7 +18,6 @@ pytest -q
 from __future__ import annotations
 
 import asyncio
-import os
 from typing import Any, Dict
 
 import pytest
@@ -135,7 +134,7 @@ async def test_respects_max_results_parameter() -> None:  # noqa: D401
 
 
 def test_env_vars_required(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: D401
-    """If creds are missing, code should raise RuntimeError."""
+    """If creds are missing, the code should raise RuntimeError."""
 
     monkeypatch.delenv("ADZUNA_APP_ID", raising=False)
     monkeypatch.delenv("ADZUNA_APP_KEY", raising=False)
