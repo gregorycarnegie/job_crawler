@@ -12,3 +12,4 @@ class Job:
     url: str
     source: str
     match_score: float = 0.0
+

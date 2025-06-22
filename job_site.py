@@ -3,3 +3,4 @@ class JobSite:
         self.name = name
         self.base_url = base_url
         self.search_path = search_path
+
