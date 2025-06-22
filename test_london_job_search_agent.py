@@ -18,6 +18,8 @@ pytest -q
 from __future__ import annotations
 
 import asyncio
+import importlib
+from main import search_london_jobs
 from typing import Any, Dict
 
 import pytest
@@ -91,8 +93,6 @@ def _patch_env_and_httpx(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: D401
     monkeypatch.setenv("ADZUNA_APP_KEY", "dummy_key")
 
     # 2) Monkey‑patch httpx.AsyncClient in the *module under test* ONLY.
-    import importlib
-
     agent = importlib.import_module("main")
     monkeypatch.setattr(agent.httpx, "AsyncClient", _DummyAsyncClient)
 
@@ -138,8 +138,6 @@ def test_env_vars_required(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: D4
 
     monkeypatch.delenv("ADZUNA_APP_ID", raising=False)
     monkeypatch.delenv("ADZUNA_APP_KEY", raising=False)
-
-    from main import search_london_jobs
 
     with pytest.raises(RuntimeError):
         # Use sync wrapper to call async fn in a test that expects an exception.
