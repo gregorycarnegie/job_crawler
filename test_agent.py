@@ -35,9 +35,7 @@ class MCPClient:
 
         # Read response
         response_line = await self.process.stdout.readline()
-        if response_line:
-            return json.loads(response_line.decode())
-        return {}
+        return json.loads(response_line.decode()) if response_line else {}
 
     async def test_profile_and_search(self):
         """Test setting profile and searching for jobs"""

@@ -5,6 +5,7 @@ from typing import Optional, Any
 from urllib.parse import urljoin, urlencode
 
 import aiohttp
+import contextlib
 from bs4 import BeautifulSoup
 
 from job import Job
@@ -61,9 +62,8 @@ class ParamJobAgent:
             async with session.get(url, headers=headers, timeout=15) as response:
                 if response.status == 200:
                     return await response.text()
-                else:
-                    logger.warning(f"HTTP {response.status} for {url}")
-                    return None
+                logger.warning(f"HTTP {response.status} for {url}")
+                return None
         except Exception as e:
             logger.error(f"Error fetching {url}: {e}")
             return None
@@ -231,22 +231,12 @@ class ParamJobAgent:
         if not salary_text:
             return 0
 
-        # Look for £ amounts
-        matches = re.findall(r'£([\d,]+)', salary_text.replace(' ', ''))
-        if matches:
-            try:
+        if matches := re.findall(r'£([\d,]+)', salary_text.replace(' ', '')):
+            with contextlib.suppress(ValueError):
                 return int(matches[0].replace(',', ''))
-            except ValueError:
-                pass
-
-        # Look for numeric ranges
-        numbers = re.findall(r'(\d{2,6})', salary_text.replace(',', ''))
-        if numbers:
-            try:
+        if numbers := re.findall(r'(\d{2,6})', salary_text.replace(',', '')):
+            with contextlib.suppress(ValueError):
                 return int(numbers[0])
-            except ValueError:
-                pass
-
         return 0
 
     def calculate_match_score(self, job: Job) -> float:
@@ -255,23 +245,27 @@ class ParamJobAgent:
         job_text = f"{job.title} {job.description}".lower()
 
         # Fintech relevance (base score)
-        fintech_matches = sum(1 for keyword in self.fintech_keywords
-                              if keyword.lower() in job_text)
+        fintech_matches = sum(
+            keyword.lower() in job_text for keyword in self.fintech_keywords
+        )
         score += fintech_matches * 10
 
         # Skills matching
-        skill_matches = sum(1 for skill in self.user_profile.skills
-                            if skill.lower() in job_text)
+        skill_matches = sum(
+            skill.lower() in job_text for skill in self.user_profile.skills
+        )
         score += skill_matches * 15
 
         # Experience matching
-        exp_matches = sum(1 for exp in self.user_profile.experience
-                          if exp.lower() in job_text)
+        exp_matches = sum(
+            exp.lower() in job_text for exp in self.user_profile.experience
+        )
         score += exp_matches * 12
 
         # Qualifications matching
-        qual_matches = sum(1 for qual in self.user_profile.qualifications
-                           if qual.lower() in job_text)
+        qual_matches = sum(
+            qual.lower() in job_text for qual in self.user_profile.qualifications
+        )
         score += qual_matches * 8
 
         # Salary bonus
