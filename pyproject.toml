@@ -1,12 +1,141 @@
 [project]
-name = "job-crawler"
-version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.13"
-dependencies = [
-    "mcp>=1.9.4",
-    "aiohttp>=3.12.13",
-    "beautifulsoup4>=4.13.4",
-    "lxml>=5.4.0"
+name = "claude-job-agent"
+version = "2.0.0"
+description = "Claude Desktop optimized job search agent with intelligent frameworks (no external AI API costs)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["claude", "job-search", "mcp", "career", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+    "Topic :: Communications",
 ]
 
+dependencies = [
+    # Core MCP framework
+    "mcp>=1.9.4",
+    
+    # HTTP clients for job APIs
+    "httpx>=0.25.0",
+    "aiohttp>=3.12.13",
+    
+    # Web scraping (lightweight)
+    "beautifulsoup4>=4.13.4",
+    "lxml>=5.4.0",
+    
+    # Environment and configuration
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    
+    # Date/time handling
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
+    "black>=25.1.0",
+    "flake8>=7.3.0",
+    "mypy>=1.16.1",
+    "isort>=6.0.1",
+]
+
+# Data analysis (if you want pandas later)
+analysis = [
+    "pandas>=2.3.0",
+    "numpy>=2.3.1",
+]
+
+# Advanced web scraping
+scraping = [
+    "requests>=2.31.0",
+    "playwright>=1.40.0",
+    "selenium>=4.15.0",
+]
+
+# System monitoring
+monitoring = [
+    "psutil>=7.0.0",
+]
+
+# All optional dependencies
+all = [
+    "claude-job-agent[dev,analysis,scraping,monitoring]"
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/claude-job-agent"
+Documentation = "https://github.com/yourusername/claude-job-agent#readme"
+Repository = "https://github.com/yourusername/claude-job-agent.git"
+Issues = "https://github.com/yourusername/claude-job-agent/issues"
+
+[project.scripts]
+claude-job-agent = "main:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*", "docs*", "examples*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    "mcp.*",
+    "fastmcp.*",
+    "playwright.*",
+    "selenium.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["main"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+]

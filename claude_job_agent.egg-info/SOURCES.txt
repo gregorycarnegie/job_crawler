@@ -1,0 +1,7 @@
+pyproject.toml
+claude_job_agent.egg-info/PKG-INFO
+claude_job_agent.egg-info/SOURCES.txt
+claude_job_agent.egg-info/dependency_links.txt
+claude_job_agent.egg-info/entry_points.txt
+claude_job_agent.egg-info/requires.txt
+claude_job_agent.egg-info/top_level.txt

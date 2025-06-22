@@ -1,3 +1,11 @@
 /uv.lock
 .idea/*
 __pycache__/*
+data/*
+backups/*
+.env
+.coverage
+diagnose_claude_desktop.py
+mcp_troubleshoot_script.py
+test_claude_desktop.py
+test_jobs.db

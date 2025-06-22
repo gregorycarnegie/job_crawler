@@ -1,0 +1,50 @@
+Metadata-Version: 2.4
+Name: claude-job-agent
+Version: 2.0.0
+Summary: Claude Desktop optimized job search agent with intelligent frameworks (no external AI API costs)
+Author-email: Your Name <your.email@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/yourusername/claude-job-agent
+Project-URL: Documentation, https://github.com/yourusername/claude-job-agent#readme
+Project-URL: Repository, https://github.com/yourusername/claude-job-agent.git
+Project-URL: Issues, https://github.com/yourusername/claude-job-agent/issues
+Keywords: claude,job-search,mcp,career,automation
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Office/Business
+Classifier: Topic :: Communications
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: mcp>=1.9.4
+Requires-Dist: httpx>=0.25.0
+Requires-Dist: aiohttp>=3.12.13
+Requires-Dist: beautifulsoup4>=4.13.4
+Requires-Dist: lxml>=5.4.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: python-dateutil>=2.8.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=1.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=6.2.1; extra == "dev"
+Requires-Dist: black>=25.1.0; extra == "dev"
+Requires-Dist: flake8>=7.3.0; extra == "dev"
+Requires-Dist: mypy>=1.16.1; extra == "dev"
+Requires-Dist: isort>=6.0.1; extra == "dev"
+Provides-Extra: analysis
+Requires-Dist: pandas>=2.3.0; extra == "analysis"
+Requires-Dist: numpy>=2.3.1; extra == "analysis"
+Provides-Extra: scraping
+Requires-Dist: requests>=2.31.0; extra == "scraping"
+Requires-Dist: playwright>=1.40.0; extra == "scraping"
+Requires-Dist: selenium>=4.15.0; extra == "scraping"
+Provides-Extra: monitoring
+Requires-Dist: psutil>=7.0.0; extra == "monitoring"
+Provides-Extra: all
+Requires-Dist: claude-job-agent[analysis,dev,monitoring,scraping]; extra == "all"
