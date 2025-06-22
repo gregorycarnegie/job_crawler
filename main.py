@@ -132,19 +132,20 @@ async def search_london_jobs(query: str, max_results: int = 10) -> List[Dict[str
     # 3) Transform into a clean, LLM‑friendly schema
     # ---------------------------------------------------------------------
     jobs: List[Dict[str, Any]] = []
-    jobs.extend(
-        {
-            "title": item.get("title"),
-            "company": item.get("company", {}).get("display_name"),
-            "location": item.get("location", {}).get("display_name"),
-            "salary_min": item.get("salary_min"),
-            "salary_max": item.get("salary_max"),
-            "contract_type": item.get("contract_type"),
-            "url": item.get("redirect_url"),
-            "description": (item.get("description", "")[:160] + "…"),
-        }
-        for item in payload.get("results", [])
-    )
+    for item in payload.get("results", []):
+        jobs.append(
+            {
+                "title": item.get("title"),
+                "company": item.get("company", {}).get("display_name"),
+                "location": item.get("location", {}).get("display_name"),
+                "salary_min": item.get("salary_min"),
+                "salary_max": item.get("salary_max"),
+                "contract_type": item.get("contract_type"),
+                "url": item.get("redirect_url"),
+                "description": (item.get("description", "")[:160] + "…"),
+            }
+        )
+
     return jobs
 
 
