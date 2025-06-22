@@ -25,7 +25,6 @@ import sqlite3
 import sys
 from datetime import datetime, timedelta
 import time
-import asyncio
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -155,7 +154,7 @@ class JobDatabase:
                 break  # Success, exit retry loop
             except sqlite3.Error as e:
                 if attempt >= max_retries - 1:
-                    raise Exception(
+                    raise RuntimeError(
                         f"Failed to initialize database after {max_retries} attempts: {e}"
                     ) from e
                 time.sleep(0.5)  # Wait before retry
@@ -413,21 +412,21 @@ async def search_jobs_with_analysis_framework(
         # Validate parameters
         if not query or not query.strip():
             return {"error": "Query parameter is required"}
-        
-        query = str(query).strip()
-        location = str(location).strip() if location else "London"
-        max_results = max(1, min(int(max_results), 50))  # Clamp to reasonable range
-        
+
+        query = query.strip()
+        location = location.strip() if location else "London"
+        max_results = max(1, min(max_results, 50))
+
         # Search multiple sources
         all_jobs = []
-        
+
         # Search Adzuna
         try:
             adzuna_jobs = await search_adzuna_jobs(query, location, max_results)
             all_jobs.extend(adzuna_jobs)
         except Exception as e:
             print(f"Adzuna search error: {e}")
-        
+
         # Remove duplicates based on company + title
         seen = set()
         unique_jobs = []
@@ -436,34 +435,34 @@ async def search_jobs_with_analysis_framework(
             if key not in seen and job.get('title') and job.get('company'):
                 seen.add(key)
                 unique_jobs.append(job)
-        
+
         # Limit results
         unique_jobs = unique_jobs[:max_results]
-        
+
         # Enhance jobs with analysis frameworks
         enhanced_jobs = []
         for job in unique_jobs:
             try:
                 # Extract basic features
                 features = extract_basic_job_features(job)
-                
+
                 enhanced_job = {
                     **job,
                     "extracted_features": features
                 }
-                
+
                 # Add analysis framework if requested
                 if include_analysis_framework:
                     framework = create_analysis_framework(job)
                     enhanced_job["analysis_framework"] = asdict(framework)
-                
+
                 enhanced_jobs.append(enhanced_job)
-                
+
             except Exception as e:
                 print(f"Error enhancing job {job.get('title', 'Unknown')}: {e}")
                 # Include job without enhancement rather than skipping
                 enhanced_jobs.append(job)
-        
+
         # Log search to database (with error handling)
         try:
             with sqlite3.connect(db.db_path, timeout=10) as conn:
@@ -475,9 +474,9 @@ async def search_jobs_with_analysis_framework(
         except Exception as e:
             print(f"Database logging error: {e}")
             # Don't fail the entire operation for logging errors
-        
+
         return enhanced_jobs
-        
+
     except Exception as e:
         print(f"Error in search_jobs_with_analysis_framework: {e}")
         return {"error": f"Search failed: {str(e)}"}
@@ -505,13 +504,13 @@ async def create_job_compatibility_template(
         # Validate parameters
         if not isinstance(user_skills, list) or not user_skills:
             return {"error": "user_skills must be a non-empty list"}
-        
-        experience_years = max(0, int(experience_years))
-        remote_preference = str(remote_preference).lower()
-        
+
+        experience_years = max(0, experience_years)
+        remote_preference = remote_preference.lower()
+
         if remote_preference not in ["remote", "hybrid", "onsite"]:
             remote_preference = "hybrid"
-        
+
         # Create user profile
         user_profile = {
             "skills": user_skills,
@@ -533,7 +532,7 @@ async def create_job_compatibility_template(
                 ]]
             }
         }
-        
+
         # Compatibility scoring template
         scoring_template = {
             "evaluation_criteria": {
@@ -593,7 +592,7 @@ async def create_job_compatibility_template(
                 "application_tips": "Specific advice for applying to this role"
             }
         }
-        
+
         return {
             "user_profile": user_profile,
             "scoring_template": scoring_template,
@@ -604,7 +603,7 @@ async def create_job_compatibility_template(
                 "step_4": "Provide specific recommendations and application tips"
             }
         }
-        
+
     except Exception as e:
         return {"error": f"Failed to create compatibility template: {str(e)}"}
 
@@ -632,7 +631,7 @@ async def track_job_application(
         # Validate parameters
         if not all([job_url, company_name, position, application_date]):
             return {"error": "All required parameters must be provided"}
-        
+
         # Store in database
         application_id = None
 
@@ -640,39 +639,35 @@ async def track_job_application(
             # Use the same database path resolution as other functions
             # This ensures we use the test database during testing
             db_path = os.getenv("DATABASE_PATH", db.db_path)
-            
+
             # Store in database with error handling
             with sqlite3.connect(db_path, timeout=10) as conn:
                 cursor = conn.cursor()
-                
+
                 # First, store/update job info
                 cursor.execute('''
                     INSERT OR REPLACE INTO jobs (title, company, url)
                     VALUES (?, ?, ?)
                 ''', (position, company_name, job_url))
-                
+
                 job_id = cursor.lastrowid
-                
+
                 # If this was a REPLACE operation (not INSERT), we need to get the actual job_id
-                if cursor.rowcount == 1:
-                    # This was an INSERT, use lastrowid
-                    pass
-                else:
+                if cursor.rowcount != 1:
                     # This was a REPLACE, need to get the actual job_id
                     cursor.execute('SELECT id FROM jobs WHERE url = ?', (job_url,))
-                    result = cursor.fetchone()
-                    if result:
+                    if result := cursor.fetchone():
                         job_id = result[0]
-                
+
                 # Store application tracking
                 cursor.execute('''
                     INSERT INTO applications (job_id, status, applied_date, notes)
                     VALUES (?, ?, ?, ?)
                 ''', (job_id, status, application_date, notes))
-                
+
                 conn.commit()
                 application_id = cursor.lastrowid
-                
+
         except sqlite3.Error as e:
             # Log error but continue with response
             print(f"Database error in track_job_application: {e}")
@@ -680,7 +675,7 @@ async def track_job_application(
         except Exception as e:
             print(f"Unexpected error in track_job_application: {e}")
             application_id = -1
-        
+
         # Calculate follow-up dates
         try:
             apply_date = datetime.strptime(application_date, "%Y-%m-%d")
@@ -691,7 +686,7 @@ async def track_job_application(
             apply_date = datetime.now()
             follow_up_date = apply_date + timedelta(days=7)
             reminder_date = apply_date + timedelta(days=14)
-        
+
         # Generate next actions based on status
         next_actions = {
             "applied": [
@@ -713,7 +708,7 @@ async def track_job_application(
                 "Continue applying to other opportunities"
             ]
         }
-        
+
         return {
             "application_id": application_id,
             "tracking_info": {
@@ -744,7 +739,7 @@ async def track_job_application(
             ],
             "database_status": "success" if application_id and application_id > 0 else "failed"
         }
-        
+
     except Exception as e:
         return {"error": f"Failed to track application: {str(e)}"}
 
@@ -1137,12 +1132,12 @@ async def create_career_progression_framework(
         # Validate parameters
         if not current_role or not target_roles or not current_skills:
             return {"error": "All parameters are required"}
-        
+
         if not isinstance(target_roles, list) or not isinstance(current_skills, list):
             return {"error": "target_roles and current_skills must be lists"}
-        
-        timeline_months = max(6, min(int(timeline_months), 120))  # Clamp to reasonable range
-        
+
+        timeline_months = max(6, min(timeline_months, 120))
+
         # Skill categories and progressions
         skill_progressions = {
             "software_engineer": {
@@ -1191,7 +1186,7 @@ async def create_career_progression_framework(
         # Career path templates
         career_paths = []
         for target_role in target_roles:
-            
+
             # Determine progression path
             role_lower = target_role.lower()
             if "senior" in role_lower or "lead" in role_lower:
@@ -1207,7 +1202,7 @@ async def create_career_progression_framework(
                 progression = skill_progressions["data_scientist"]["junior_to_mid"]
             else:
                 progression = skill_progressions["product_manager"]["junior_to_mid"]
-                
+
             # Calculate skill gaps
             required_technical = progression["technical"]
             required_soft = progression["soft"]
@@ -1302,7 +1297,7 @@ async def create_career_progression_framework(
                 "skill_assessment": ["Technical interviews", "Peer feedback", "Project reviews"]
             }
         }
-        
+
     except Exception as e:
         return {"error": f"Failed to create career progression framework: {str(e)}"}
 
