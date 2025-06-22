@@ -7,3 +7,4 @@ class UserProfile:
     experience: list[str]
     qualifications: list[str]
     min_salary: int = 50000
+
