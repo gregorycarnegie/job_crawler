@@ -6,7 +6,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Optional
 from urllib.parse import urlencode, urljoin
-
+from job_site import JobSite
+from user_profile import UserProfile
 import aiohttp
 import mcp.server.stdio
 from bs4 import BeautifulSoup
@@ -17,30 +18,6 @@ from mcp.types import Tool, TextContent, CallToolResult
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("param-job-agent")
-
-@dataclass
-class UserProfile:
-    skills: list[str]
-    experience: list[str]
-    qualifications: list[str]
-    min_salary: int = 50000
-
-@dataclass
-class Job:
-    title: str
-    company: str
-    location: str
-    salary: Optional[str]
-    description: str
-    url: str
-    source: str
-    match_score: float = 0.0
-
-class JobSite:
-    def __init__(self, name: str, base_url: str, search_path: str):
-        self.name = name
-        self.base_url = base_url
-        self.search_path = search_path
 
 class ParamJobAgent:
     def __init__(self):
@@ -426,10 +403,12 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> CallToolResu
         if name == "set_profile":
             job_agent.set_user_profile(arguments)
             return CallToolResult(
-                content=[TextContent(
-                    type="text",
-                    text="Profile updated successfully! Ready to search for fintech opportunities."
-                )]
+                content=[
+                    TextContent(
+                        type="text",
+                        text="Profile updated successfully! Ready to search for fintech opportunities."
+                    )
+                ]
             )
 
         elif name == "search_fintech_jobs":
@@ -438,10 +417,12 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> CallToolResu
 
             if not jobs:
                 return CallToolResult(
-                    content=[TextContent(
-                        type="text",
-                        text="No fintech jobs found matching your criteria. Try updating your profile or check back later."
-                    )]
+                    content=[
+                        TextContent(
+                            type="text",
+                            text="No fintech jobs found matching your criteria. Try updating your profile or check back later."
+                        )
+                    ]
                 )
 
             jobs_text = []
@@ -459,17 +440,24 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> CallToolResu
             result_text = f"Found {len(jobs)} fintech job opportunities:\n\n" + "\n---\n\n".join(jobs_text)
 
             return CallToolResult(
-                content=[TextContent(type="text", text=result_text)]
+                content=[
+                    TextContent(
+                        type="text",
+                        text=result_text
+                    )
+                ]
             )
 
         elif name == "get_job_details":
             url = arguments.get("url")
             if not url:
                 return CallToolResult(
-                    content=[TextContent(
-                        type="text",
-                        text="URL is required to fetch job details"
-                    )],
+                    content=[
+                        TextContent(
+                            type="text",
+                            text="URL is required to fetch job details"
+                        )
+                    ],
                     isError=True
                 )
 
@@ -480,35 +468,43 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> CallToolResu
                     # Extract main content
                     content = soup.get_text()[:2000]
                     return CallToolResult(
-                        content=[TextContent(
-                            type="text",
-                            text=f"Job Details from {url}:\n\n{content}..."
-                        )]
+                        content=[
+                            TextContent(
+                                type="text",
+                                text=f"Job Details from {url}:\n\n{content}..."
+                            )
+                        ]
                     )
                 else:
                     return CallToolResult(
-                        content=[TextContent(
-                            type="text",
-                            text=f"Unable to fetch job details from {url}"
-                        )],
+                        content=[
+                            TextContent(
+                                type="text",
+                                text=f"Unable to fetch job details from {url}"
+                            )
+                        ],
                         isError=True
                     )
         else:
             return CallToolResult(
-                content=[TextContent(
-                    type="text",
-                    text=f"Unknown tool: {name}"
-                )],
+                content=[
+                    TextContent(
+                        type="text",
+                        text=f"Unknown tool: {name}"
+                    )
+                ],
                 isError=True
             )
 
     except Exception as e:
         logger.error(f"Error in tool {name}: {e}")
         return CallToolResult(
-            content=[TextContent(
-                type="text",
-                text=f"Error: {str(e)}"
-            )],
+            content=[
+                TextContent(
+                    type="text",
+                    text=f"Error: {str(e)}"
+                )
+            ],
             isError=True
         )
 
