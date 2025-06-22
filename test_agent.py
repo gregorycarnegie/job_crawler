@@ -13,7 +13,7 @@ class MCPClient:
     async def start_agent(self):
         """Start the MCP agent process"""
         self.process = await asyncio.create_subprocess_exec(
-            sys.executable, 'param_agent.py',
+            sys.executable, 'main.py',
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
