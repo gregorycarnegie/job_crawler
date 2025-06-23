@@ -156,7 +156,7 @@ class TestHealthChecker:
         """Test health checker initializes correctly."""
         main_db, metrics_db = temp_databases
         
-        health_checker = create_health_checker_with_db(metrics_db)
+        _health_checker = create_health_checker_with_db(metrics_db)
         
         # Check metrics database tables exist
         def check_tables(conn):

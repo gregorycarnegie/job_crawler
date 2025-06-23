@@ -318,7 +318,7 @@ def create_test_database():
 
         try:
             # Test database creation
-            db = JobDatabase(test_db_path)
+            _db = JobDatabase(test_db_path)
 
             # Test basic operations
             with sqlite3.connect(test_db_path, timeout=10) as conn:
@@ -380,7 +380,7 @@ def run_mcp_validation():
         from main import mcp
         
         # Check if tools are registered
-        tools = []
+        # _tools = []
         
         # Get tool names (this depends on FastMCP implementation)
         # For now, just check if mcp object exists
