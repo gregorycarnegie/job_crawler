@@ -71,11 +71,17 @@ A powerful job search automation tool designed specifically for Claude Desktop, 
    {
      "mcpServers": {
        "claude-job-agent": {
-         "command": "python",
-         "args": ["/path/to/claude-job-agent/src/claude_job_agent/main.py"],
+         "command": "uv",
+         "args": [
+            "--directory",
+            "/path/to/claude-job-agent",
+            "run",
+            "src/claude_job_agent/main.py"
+         ],
          "env": {
            "ADZUNA_APP_ID": "your_app_id",
-           "ADZUNA_APP_KEY": "your_app_key"
+           "ADZUNA_APP_KEY": "your_app_key",
+           "DATABASE_PATH": "/path/to/jobs.db"
          }
        }
      }
@@ -248,7 +254,7 @@ python scripts/run_tests.py --verbose
 
 ## 📁 Project Structure
 
-```
+```bash
 claude-job-agent/
 ├── src/claude_job_agent/
 │   ├── main.py                 # Main MCP server and tools
