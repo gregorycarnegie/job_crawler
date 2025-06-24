@@ -139,3 +139,8 @@ omit = [
     "*/test_*",
     "setup.py",
 ]
+
+[tool.ruff]
+target-version = "py313"
+line-length    = 120
+select         = ["E","W","F","I","UP"]

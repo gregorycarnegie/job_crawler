@@ -8,20 +8,21 @@ import os
 import sqlite3
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 import httpx
+
 
 class HealthChecker:
     def __init__(self):
         self.logger = logging.getLogger("job_agent.health")
         self.metrics_db = "data/metrics.db"
         self.init_metrics_db()
-    
+
     def init_metrics_db(self):
         """Initialize metrics database."""
         Path("data").mkdir(exist_ok=True)
-        
+
         with sqlite3.connect(self.metrics_db) as conn:
             conn.executescript('''
                 CREATE TABLE IF NOT EXISTS health_checks (
@@ -32,7 +33,7 @@ class HealthChecker:
                     response_time REAL,
                     details TEXT
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS api_metrics (
                     id INTEGER PRIMARY KEY,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +44,7 @@ class HealthChecker:
                     request_size INTEGER,
                     response_size INTEGER
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS performance_metrics (
                     id INTEGER PRIMARY KEY,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -51,7 +52,7 @@ class HealthChecker:
                     metric_value REAL,
                     context TEXT
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS error_logs (
                     id INTEGER PRIMARY KEY,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -61,14 +62,14 @@ class HealthChecker:
                     context TEXT
                 );
             ''')
-    
-    async def check_database_health(self) -> Dict[str, Any]:
+
+    async def check_database_health(self) -> dict[str, Any]:
         """Check database connectivity and performance - FIXED VERSION."""
         start_time = time.time()
-        
+
         try:
             db_path = os.getenv("DATABASE_PATH", "data/jobs.db")
-            
+
             # CRITICAL FIX: Check if database file exists first
             if not Path(db_path).exists():
                 response_time = time.time() - start_time
@@ -80,36 +81,36 @@ class HealthChecker:
                 }
                 self.log_health_check("database", "unhealthy", response_time, f"File not found: {db_path}")
                 return status
-            
+
             with sqlite3.connect(db_path, timeout=5) as conn:
                 cursor = conn.cursor()
-                
+
                 # Basic connectivity check
                 cursor.execute("SELECT 1")
                 result = cursor.fetchone()
-                
+
                 if result is None or result[0] != 1:
                     raise sqlite3.Error("Connectivity test failed")
-                
+
                 # Check table existence
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
                 tables = cursor.fetchall()
-                
+
                 # Check record counts
                 try:
                     cursor.execute("SELECT COUNT(*) FROM jobs")
                     job_count = cursor.fetchone()[0]
                 except sqlite3.OperationalError:
                     job_count = 0
-                
+
                 try:
                     cursor.execute("SELECT COUNT(*) FROM applications")
                     app_count = cursor.fetchone()[0]
                 except sqlite3.OperationalError:
                     app_count = 0
-                
+
                 response_time = time.time() - start_time
-                
+
                 status = {
                     "status": "healthy",
                     "response_time": response_time,
@@ -118,10 +119,10 @@ class HealthChecker:
                     "application_count": app_count,
                     "details": f"Database responsive in {response_time:.2f}s"
                 }
-                
+
                 self.log_health_check("database", "healthy", response_time, json.dumps(status))
                 return status
-                
+
         except Exception as e:
             response_time = time.time() - start_time
             status = {
@@ -130,16 +131,16 @@ class HealthChecker:
                 "error": str(e),
                 "details": f"Database check failed: {e}"
             }
-            
+
             self.log_health_check("database", "unhealthy", response_time, str(e))
             return status
-    
-    async def check_api_health(self) -> Dict[str, Any]:
+
+    async def check_api_health(self) -> dict[str, Any]:
         """Check external API connectivity."""
         # Check Adzuna API
         adzuna_status = await self.check_adzuna_api()
         api_checks = {"adzuna": adzuna_status}
-        
+
         # Overall API health
         healthy_apis = sum(
             status["status"] == "healthy" for status in api_checks.values()
@@ -152,21 +153,21 @@ class HealthChecker:
             "healthy_count": healthy_apis,
             "total_count": len(api_checks)
         }
-    
-    async def check_adzuna_api(self) -> Dict[str, Any]:
+
+    async def check_adzuna_api(self) -> dict[str, Any]:
         """Check Adzuna API connectivity."""
         start_time = time.time()
-        
+
         app_id = os.getenv("ADZUNA_APP_ID")
         app_key = os.getenv("ADZUNA_APP_KEY")
-        
+
         if not app_id or not app_key:
             return {
                 "status": "unconfigured",
                 "response_time": 0,
                 "details": "API credentials not configured"
             }
-        
+
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 response = await client.get(
@@ -178,9 +179,9 @@ class HealthChecker:
                         "what": "test"
                     }
                 )
-                
+
                 response_time = time.time() - start_time
-                
+
                 if response.status_code == 200:
                     self.log_api_metric("adzuna", "search", 200, response_time, 0, len(response.content))
                     return {
@@ -196,7 +197,7 @@ class HealthChecker:
                         "status_code": response.status_code,
                         "details": f"API returned status {response.status_code}"
                     }
-                    
+
         except Exception as e:
             response_time = time.time() - start_time
             self.log_error("adzuna_api_check", str(e), "", "health_check")
@@ -250,7 +251,7 @@ class HealthChecker:
         except Exception as e:
             # Log error but don't fail the health check
             print(f"Warning: Failed to log error: {e}")
-    
+
     def safe_db_execute(self, query, params=None, fetch=None):
         """Safely execute database query with proper connection handling."""
         conn = sqlite3.connect(self.metrics_db)
@@ -260,14 +261,14 @@ class HealthChecker:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            
+
             if fetch == 'one':
                 result = cursor.fetchone()
             elif fetch == 'all':
                 result = cursor.fetchall()
             else:
                 result = None
-            
+
             conn.commit()
             return result
         finally:

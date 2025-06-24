@@ -21,12 +21,13 @@ Usage:
     python monitor.py cleanup   # Run maintenance tasks
 """
 
+import argparse
 import asyncio
 import logging
-import argparse
 from pathlib import Path
-from src.claude_job_agent.monitoring.monitoring_service import MonitoringService
+
 from src.claude_job_agent.monitoring.backup_manager import BackupManager
+from src.claude_job_agent.monitoring.monitoring_service import MonitoringService
 
 # =============================================================================
 # Logging Setup
@@ -36,40 +37,40 @@ def setup_logging():
     """Configure comprehensive logging."""
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
-    
+
     # Create formatters
     detailed_formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    
+
     # Main application logger
     app_logger = logging.getLogger("job_agent")
     app_logger.setLevel(logging.INFO)
-    
+
     # File handler for all logs
     app_handler = logging.FileHandler(log_dir / "job_agent.log")
     app_handler.setFormatter(detailed_formatter)
     app_logger.addHandler(app_handler)
-    
+
     # Error logger
     error_logger = logging.getLogger("job_agent.errors")
     error_handler = logging.FileHandler(log_dir / "errors.log")
     error_handler.setFormatter(detailed_formatter)
     error_handler.setLevel(logging.ERROR)
     error_logger.addHandler(error_handler)
-    
+
     # Performance logger
     perf_logger = logging.getLogger("job_agent.performance")
     perf_handler = logging.FileHandler(log_dir / "performance.log")
     perf_handler.setFormatter(detailed_formatter)
     perf_logger.addHandler(perf_handler)
-    
+
     # API usage logger
     api_logger = logging.getLogger("job_agent.api")
     api_handler = logging.FileHandler(log_dir / "api_usage.log")
     api_handler.setFormatter(detailed_formatter)
     api_logger.addHandler(api_handler)
-    
+
     return app_logger, error_logger, perf_logger, api_logger
 
 # =============================================================================
@@ -115,13 +116,13 @@ async def status_command():
 async def monitor_command():
     """Start monitoring service."""
     print("🚀 Starting Claude Job Agent Monitoring Service")
-    
+
     # Setup logging
     setup_logging()
-    
+
     # Start monitoring
     monitor = MonitoringService()
-    
+
     try:
         await monitor.monitoring_loop()
     except KeyboardInterrupt:
@@ -133,7 +134,7 @@ async def backup_command():
     """Create database backup."""
     print("💾 Creating database backup...")
     backup_manager = BackupManager()
-    
+
     if backup_manager.backup_database():
         print("✅ Backup created successfully")
     else:
@@ -148,24 +149,24 @@ async def maintenance_command():
 
 def main():
     """Main CLI entry point."""
-    
+
     parser = argparse.ArgumentParser(description="Claude Job Agent Operations")
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
+
     # Status command
     subparsers.add_parser('status', help='Show system status')
-    
+
     # Monitor command
     subparsers.add_parser('monitor', help='Start monitoring service')
-    
+
     # Backup command
     subparsers.add_parser('backup', help='Create database backup')
-    
-    # Maintenance command  
+
+    # Maintenance command
     subparsers.add_parser('maintenance', help='Run maintenance tasks')
-    
+
     args = parser.parse_args()
-    
+
     if args.command == 'status':
         asyncio.run(status_command())
     elif args.command == 'monitor':

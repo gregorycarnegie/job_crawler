@@ -2,14 +2,15 @@
 # Backup System
 # =============================================================================
 
+import gzip
 import logging
 import os
 import shutil
 import sqlite3
 import time
-import gzip
 from datetime import datetime, timedelta
 from pathlib import Path
+
 from .config import MonitoringConfig
 
 
@@ -18,7 +19,7 @@ class BackupManager:
         self.backup_dir = Path("backups")
         self.backup_dir.mkdir(exist_ok=True)
         self.logger = logging.getLogger("job_agent.backup")
-    
+
     def backup_database(self) -> bool:
         """Create database backup - FIXED VERSION."""
         try:
@@ -45,7 +46,7 @@ class BackupManager:
 
                 # Small delay for Windows file system
                 time.sleep(0.1)
-                
+
             except Exception as backup_error:
                 self.logger.warning(f"SQLite backup failed: {backup_error}, trying file copy")
                 # Fallback to file copy
@@ -73,7 +74,7 @@ class BackupManager:
 
                 self.logger.info(f"Database backup created: {backup_file}.gz")
                 return True
-                
+
             except Exception as compress_error:
                 self.logger.error(f"Backup compression failed: {compress_error}")
                 return False
@@ -81,16 +82,16 @@ class BackupManager:
         except Exception as e:
             self.logger.error(f"Database backup failed: {e}")
             return False
-    
+
     def cleanup_old_backups(self):
         """Remove old backup files."""
         try:
             cutoff_date = datetime.now() - timedelta(days=MonitoringConfig.BACKUP_RETENTION_DAYS)
-            
+
             for backup_file in self.backup_dir.glob("*.gz"):
                 if backup_file.stat().st_mtime < cutoff_date.timestamp():
                     backup_file.unlink()
                     self.logger.info(f"Removed old backup: {backup_file}")
-                    
+
         except Exception as e:
             self.logger.error(f"Backup cleanup failed: {e}")

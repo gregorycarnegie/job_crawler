@@ -29,10 +29,10 @@ def run_command(command, description, capture_output=False):
     print(f"🔧 {description}...")
     try:
         result = subprocess.run(
-            command, 
-            shell=True, 
-            check=True, 
-            capture_output=capture_output, 
+            command,
+            shell=True,
+            check=True,
+            capture_output=capture_output,
             text=True
         )
         if capture_output:
@@ -49,10 +49,10 @@ def run_command(command, description, capture_output=False):
 def check_dependencies():
     """Check if required dependencies are installed - UPDATED VERSION."""
     print("📦 Checking dependencies...")
-    
+
     required_packages = [
         "pytest",
-        "pytest-asyncio", 
+        "pytest-asyncio",
         "httpx",
         "aiohttp",
         "bs4",
@@ -62,37 +62,37 @@ def check_dependencies():
         "dateutil",
         "mcp",
     ]
-    
+
     optional_packages = [
         "pytest-cov",  # For coverage reporting
         "psutil",      # For system monitoring
     ]
-    
+
     missing_required = []
     missing_optional = []
-    
+
     for package in required_packages:
         try:
             __import__(package.replace("-", "_"))
         except ImportError:
             missing_required.append(package)
-    
+
     for package in optional_packages:
         try:
             __import__(package.replace("-", "_"))
         except ImportError:
             missing_optional.append(package)
-    
+
     if missing_required:
         print(f"❌ Missing required packages: {', '.join(missing_required)}")
         print("Install with: pip install " + " ".join(missing_required))
         return False
-    
+
     if missing_optional:
         print(f"⚠️  Missing optional packages: {', '.join(missing_optional)}")
         print("Install with: pip install " + " ".join(missing_optional))
         print("(Tests will run with reduced functionality)")
-    
+
     print("✅ All required dependencies installed")
     return True
 
@@ -102,7 +102,7 @@ def run_main_tests(verbose=False):
     print("=" * 40)
 
     test_command = "pytest tests/test_main.py" + (" -v" if verbose else " -q")
-    
+
     # CRITICAL FIX: Check if pytest-cov is available before adding coverage
     try:
         import pytest_cov
@@ -111,7 +111,7 @@ def run_main_tests(verbose=False):
     except ImportError:
         print("ℹ️  pytest-cov not installed, running tests without coverage")
         print("    Install with: pip install pytest-cov")
-    
+
     return run_command(test_command, "Main agent tests")
 
 def run_monitor_tests(verbose=False):
@@ -169,7 +169,7 @@ def validate_configuration():
     # Check if main files exist
     required_files = [
         "src/claude_job_agent/main.py",
-        "scripts/monitor.py", 
+        "scripts/monitor.py",
         "pyproject.toml"
     ]
 
@@ -205,8 +205,8 @@ def run_syntax_checks():
     # Python syntax check
     try:
         result = subprocess.run(
-            ["python", "-m", "py_compile", "src/claude_job_agent/main.py"], 
-            capture_output=True, 
+            ["python", "-m", "py_compile", "src/claude_job_agent/main.py"],
+            capture_output=True,
             text=True
         )
         if result.returncode == 0:
@@ -223,8 +223,8 @@ def run_syntax_checks():
     # Check monitor.py syntax
     try:
         result = subprocess.run(
-            ["python", "-m", "py_compile", "scripts/monitor.py"], 
-            capture_output=True, 
+            ["python", "-m", "py_compile", "scripts/monitor.py"],
+            capture_output=True,
             text=True
         )
         if result.returncode == 0:
@@ -241,8 +241,8 @@ def run_syntax_checks():
     # Optional: Run black formatting check
     try:
         result = subprocess.run(
-            ["black", "--check", "--diff", "src/claude_job_agent/main.py", "scripts/monitor.py"], 
-            capture_output=True, 
+            ["black", "--check", "--diff", "src/claude_job_agent/main.py", "scripts/monitor.py"],
+            capture_output=True,
             text=True
         )
         if result.returncode == 0:
@@ -267,23 +267,23 @@ def test_api_connectivity():
     """Test API connectivity with real endpoints."""
     print("\n🌐 Testing API Connectivity")
     print("=" * 40)
-    
+
     # Test if we can import and use the search function
     try:
         import asyncio
         import os
-        
+
         # Set test environment
         app_id = os.getenv("ADZUNA_APP_ID")
         app_key = os.getenv("ADZUNA_APP_KEY")
-        
+
         if not app_id or not app_key:
             print("⚠️  Skipping API test - credentials not configured")
             return True
-        
+
         # Import after setting environment
         from src.claude_job_agent.main import search_adzuna_jobs
-        
+
         async def test_search():
             try:
                 results = await search_adzuna_jobs("test", max_results=1)
@@ -291,15 +291,15 @@ def test_api_connectivity():
             except Exception as e:
                 print(f"❌ API test failed: {e}")
                 return False
-        
+
         result = asyncio.run(test_search())
         if result:
             print("✅ API connectivity test passed")
         else:
             print("❌ API connectivity test failed")
-        
+
         return result
-        
+
     except Exception as e:
         print(f"❌ API test setup failed: {e}")
         return False
@@ -310,10 +310,11 @@ def create_test_database():
     print("=" * 40)
 
     try:
-        import tempfile
-        import sqlite3
         import gc
+        import sqlite3
+        import tempfile
         import time
+
         from src.claude_job_agent.main import JobDatabase
 
         # Create temporary database with better Windows handling
@@ -369,7 +370,7 @@ def create_test_database():
                 except OSError:
                     if attempt < 4:
                         time.sleep(0.5 * (attempt + 1))  # Increasing delay
-    
+
     except Exception as e:
         print(f"❌ Database test failed: {e}")
         return False
@@ -378,24 +379,24 @@ def run_mcp_validation():
     """Validate MCP server functionality."""
     print("\n🔌 Validating MCP Server")
     print("=" * 40)
-    
+
     try:
         # Test MCP server imports
         from src.claude_job_agent.main import mcp
-        
+
         # Check if tools are registered
         # _tools = []
-        
+
         # Get tool names (this depends on FastMCP implementation)
         # For now, just check if mcp object exists
         if hasattr(mcp, '_tools') or hasattr(mcp, 'tools'):
             print("✅ MCP server tools registered")
         else:
             print("⚠️  MCP server structure may have changed")
-        
+
         print("✅ MCP server validation passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ MCP validation failed: {e}")
         return False
@@ -404,22 +405,22 @@ def generate_test_report(results):
     """Generate a comprehensive test report."""
     print("\n📊 Test Report")
     print("=" * 50)
-    
+
     total_tests = len(results)
     passed_tests = sum(bool(result)
                    for result in results.values())
     failed_tests = total_tests - passed_tests
-    
+
     print(f"Total Tests: {total_tests}")
     print(f"Passed: {passed_tests}")
     print(f"Failed: {failed_tests}")
     print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
-    
+
     print("\nDetailed Results:")
     for test_name, result in results.items():
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"  {status} {test_name}")
-    
+
     if failed_tests == 0:
         print("\n🎉 All tests passed! Your Claude Job Agent is ready to deploy.")
         return True
