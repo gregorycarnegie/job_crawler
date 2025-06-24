@@ -8,10 +8,10 @@ import sqlite3
 import gzip
 from datetime import datetime, timedelta
 from pathlib import Path
-from health_checker import HealthChecker
-from performance_monitor import PerformanceMonitor
-from monitoring_config import MonitoringConfig
-from backup_manager import BackupManager
+from .health_checker import HealthChecker
+from .performance_monitor import PerformanceMonitor
+from .config import MonitoringConfig
+from .backup_manager import BackupManager
 
 
 class MonitoringService:

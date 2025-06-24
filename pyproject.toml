@@ -84,15 +84,15 @@ Repository = "https://github.com/yourusername/claude-job-agent.git"
 Issues = "https://github.com/yourusername/claude-job-agent/issues"
 
 [project.scripts]
-claude-job-agent = "main:main"
+claude-job-agent = "claude_job_agent.main:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["*"]
+where = ["src"]
+include = ["claude_job_agent"]
 exclude = ["tests*", "docs*", "examples*"]
 
 [tool.black]

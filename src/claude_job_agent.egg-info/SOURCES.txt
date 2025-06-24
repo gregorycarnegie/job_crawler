@@ -1,0 +1,11 @@
+pyproject.toml
+src/claude_job_agent/__init__.py
+src/claude_job_agent/main.py
+src/claude_job_agent.egg-info/PKG-INFO
+src/claude_job_agent.egg-info/SOURCES.txt
+src/claude_job_agent.egg-info/dependency_links.txt
+src/claude_job_agent.egg-info/entry_points.txt
+src/claude_job_agent.egg-info/requires.txt
+src/claude_job_agent.egg-info/top_level.txt
+tests/test_main.py
+tests/test_monitoring.py

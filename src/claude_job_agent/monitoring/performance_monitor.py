@@ -6,7 +6,7 @@ import logging
 import sqlite3
 from datetime import datetime
 from typing import Dict, Any
-from health_checker import HealthChecker
+from .health_checker import HealthChecker
 
 
 class PerformanceMonitor:

@@ -10,7 +10,7 @@ import time
 import gzip
 from datetime import datetime, timedelta
 from pathlib import Path
-from monitoring_config import MonitoringConfig
+from .config import MonitoringConfig
 
 
 class BackupManager:

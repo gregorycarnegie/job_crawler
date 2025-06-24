@@ -25,8 +25,8 @@ import asyncio
 import logging
 import argparse
 from pathlib import Path
-from backup_manager import BackupManager
-from monitoring_service import MonitoringService
+from src.claude_job_agent.monitoring.monitoring_service import MonitoringService
+from src.claude_job_agent.monitoring.backup_manager import BackupManager
 
 # =============================================================================
 # Logging Setup

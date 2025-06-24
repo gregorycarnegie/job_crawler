@@ -19,11 +19,11 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from health_checker import HealthChecker
-from performance_monitor import PerformanceMonitor
-from monitoring_config import MonitoringConfig
-
-from monitor import BackupManager, MonitoringService
+from src.claude_job_agent.monitoring.health_checker import HealthChecker
+from src.claude_job_agent.monitoring.config import MonitoringConfig
+from src.claude_job_agent.monitoring.monitoring_service import MonitoringService
+from src.claude_job_agent.monitoring.backup_manager import BackupManager
+from src.claude_job_agent.monitoring.performance_monitor import PerformanceMonitor
 
 # Mock environment variables before importing monitor
 test_env = {
@@ -660,11 +660,11 @@ class TestCLICommands:
             }
         }
         
-        with patch('monitor.MonitoringService') as mock_service_class:
+        with patch('scripts.monitor.MonitoringService') as mock_service_class:
             mock_instance = mock_service_class.return_value
             mock_instance.run_health_checks = AsyncMock(return_value=mock_health_summary)
             
-            from monitor import status_command
+            from scripts.monitor import status_command
             await status_command()
             
             captured = capsys.readouterr()
@@ -678,7 +678,7 @@ class TestCLICommands:
         """Test backup command."""
         main_db, metrics_db = temp_databases
         
-        from monitor import backup_command
+        from scripts.monitor import backup_command
         await backup_command()
         
         captured = capsys.readouterr()
@@ -692,7 +692,7 @@ class TestCLICommands:
         """Test maintenance command."""
         main_db, metrics_db = temp_databases
         
-        from monitor import maintenance_command
+        from scripts.monitor import maintenance_command
         await maintenance_command()
         
         captured = capsys.readouterr()

@@ -1,0 +1,2 @@
+[console_scripts]
+claude-job-agent = claude_job_agent.main:main

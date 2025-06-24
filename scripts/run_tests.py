@@ -20,6 +20,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 def run_command(command, description, capture_output=False):
     """Run a command with error handling."""
     print(f"🔧 {description}...")
@@ -97,7 +101,7 @@ def run_main_tests(verbose=False):
     print("\n🧪 Running Main Agent Tests")
     print("=" * 40)
 
-    test_command = "pytest test_main.py" + (" -v" if verbose else " -q")
+    test_command = "pytest tests/test_main.py" + (" -v" if verbose else " -q")
     
     # CRITICAL FIX: Check if pytest-cov is available before adding coverage
     try:
@@ -115,7 +119,7 @@ def run_monitor_tests(verbose=False):
     print("\n🔍 Running Monitor Tests")
     print("=" * 40)
 
-    test_command = "pytest test_monitor.py" + (" -v" if verbose else " -q")
+    test_command = "pytest tests/test_monitoring.py" + (" -v" if verbose else " -q")
     return run_command(test_command, "Monitor system tests")
 
 def run_integration_tests(verbose=False):
@@ -123,7 +127,7 @@ def run_integration_tests(verbose=False):
     print("\n🔗 Running Integration Tests")
     print("=" * 40)
 
-    test_command = "pytest test_main.py::TestIntegration" + (
+    test_command = "pytest tests/test_main.py::TestIntegration" + (
         " -v" if verbose else " -q"
     )
     return run_command(test_command, "Integration tests")
@@ -135,9 +139,9 @@ def run_quick_tests(verbose=False):
 
     # Test database functionality
     quick_tests = [
-        "pytest test_main.py::TestDatabase -q",
-        "pytest test_main.py::TestJobAnalysis -q", 
-        "pytest test_monitor.py::TestHealthChecker::test_health_checker_initialization -q"
+        "pytest tests/test_main.py::TestDatabase -q",
+        "pytest tests/test_main.py::TestJobAnalysis -q", 
+        "pytest tests/test_monitoring.py::TestHealthChecker::test_health_checker_initialization -q"
     ]
 
     return all(
@@ -152,7 +156,7 @@ def run_performance_tests(verbose=False):
     print("\n🚀 Running Performance Tests")
     print("=" * 40)
 
-    test_command = "pytest test_main.py::TestPerformance" + (
+    test_command = "pytest tests/test_main.py::TestPerformance" + (
         " -v" if verbose else " -q"
     )
     return run_command(test_command, "Performance tests")
@@ -164,8 +168,8 @@ def validate_configuration():
 
     # Check if main files exist
     required_files = [
-        "main.py",
-        "monitor.py", 
+        "src/claude_job_agent/main.py",
+        "scripts/monitor.py", 
         "pyproject.toml"
     ]
 
@@ -201,7 +205,7 @@ def run_syntax_checks():
     # Python syntax check
     try:
         result = subprocess.run(
-            ["python", "-m", "py_compile", "main.py"], 
+            ["python", "-m", "py_compile", "src/claude_job_agent/main.py"], 
             capture_output=True, 
             text=True
         )
@@ -219,7 +223,7 @@ def run_syntax_checks():
     # Check monitor.py syntax
     try:
         result = subprocess.run(
-            ["python", "-m", "py_compile", "monitor.py"], 
+            ["python", "-m", "py_compile", "scripts/monitor.py"], 
             capture_output=True, 
             text=True
         )
@@ -237,7 +241,7 @@ def run_syntax_checks():
     # Optional: Run black formatting check
     try:
         result = subprocess.run(
-            ["black", "--check", "--diff", "main.py", "monitor.py"], 
+            ["black", "--check", "--diff", "src/claude_job_agent/main.py", "scripts/monitor.py"], 
             capture_output=True, 
             text=True
         )
@@ -278,7 +282,7 @@ def test_api_connectivity():
             return True
         
         # Import after setting environment
-        from main import search_adzuna_jobs
+        from src.claude_job_agent.main import search_adzuna_jobs
         
         async def test_search():
             try:
@@ -310,7 +314,7 @@ def create_test_database():
         import sqlite3
         import gc
         import time
-        from main import JobDatabase
+        from src.claude_job_agent.main import JobDatabase
 
         # Create temporary database with better Windows handling
         fd, test_db_path = tempfile.mkstemp(suffix=".db", prefix="test_job_agent_")
@@ -377,7 +381,7 @@ def run_mcp_validation():
     
     try:
         # Test MCP server imports
-        from main import mcp
+        from src.claude_job_agent.main import mcp
         
         # Check if tools are registered
         # _tools = []

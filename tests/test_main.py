@@ -29,7 +29,7 @@ os.environ |= {
 }
 
 # Import after setting environment variables
-from main import (
+from src.claude_job_agent.main import (
     UserProfile,
     JobAnalysisFramework,
     JobDatabase,
@@ -308,7 +308,7 @@ class TestMCPTools:
         mock_httpx_client.get.return_value.json.return_value = sample_adzuna_response
         
         with patch('httpx.AsyncClient', return_value=mock_httpx_client):
-            from main import search_jobs_with_analysis_framework
+            from src.claude_job_agent.main import search_jobs_with_analysis_framework
             
             results = await search_jobs_with_analysis_framework(
                 query="python developer",
@@ -331,7 +331,7 @@ class TestMCPTools:
     @pytest.mark.asyncio
     async def test_create_job_compatibility_template(self):
         """Test compatibility template creation."""
-        from main import create_job_compatibility_template
+        from src.claude_job_agent.main import create_job_compatibility_template
         
         result = await create_job_compatibility_template(
             user_skills=["Python", "JavaScript", "SQL"],
@@ -359,7 +359,7 @@ class TestMCPTools:
     @pytest.mark.asyncio
     async def test_generate_application_templates(self):
         """Test application template generation."""
-        from main import generate_application_templates
+        from src.claude_job_agent.main import generate_application_templates
         
         result = await generate_application_templates(
             job_title="Senior Python Developer",
@@ -388,7 +388,7 @@ class TestMCPTools:
     @pytest.mark.asyncio
     async def test_track_job_application(self, temp_database):
         """Test job application tracking."""
-        from main import track_job_application
+        from src.claude_job_agent.main import track_job_application
         
         result = await track_job_application(
             job_url="http://example.com/job/123",
@@ -428,7 +428,7 @@ class TestMCPTools:
     @pytest.mark.asyncio
     async def test_analyze_job_market_data(self, temp_database):
         """Test job market analysis."""
-        from main import analyze_job_market_data
+        from src.claude_job_agent.main import analyze_job_market_data
         
         # Add some test data to database
         with sqlite3.connect(temp_database.db_path) as conn:
@@ -465,7 +465,7 @@ class TestMCPTools:
     @pytest.mark.asyncio
     async def test_create_career_progression_framework(self):
         """Test career progression framework creation."""
-        from main import create_career_progression_framework
+        from src.claude_job_agent.main import create_career_progression_framework
         
         result = await create_career_progression_framework(
             current_role="Software Developer",
@@ -494,7 +494,7 @@ class TestMCPTools:
     @pytest.mark.asyncio
     async def test_get_application_status_summary(self, temp_database):
         """Test application status summary."""
-        from main import get_application_status_summary
+        from src.claude_job_agent.main import get_application_status_summary
         from datetime import datetime, timedelta
 
         # Debug: Check initial state
@@ -592,7 +592,7 @@ class TestIntegration:
         
         with patch('httpx.AsyncClient', return_value=mock_httpx_client):
             # Import tools
-            from main import (
+            from src.claude_job_agent.main import (
                 search_jobs_with_analysis_framework,
                 create_job_compatibility_template,
                 generate_application_templates,
@@ -653,7 +653,7 @@ class TestPerformance:
         mock_httpx_client.get.return_value.json.return_value = sample_adzuna_response
         
         with patch('httpx.AsyncClient', return_value=mock_httpx_client):
-            from main import search_jobs_with_analysis_framework
+            from src.claude_job_agent.main import search_jobs_with_analysis_framework
             
             # Run multiple searches concurrently
             tasks = [
@@ -719,7 +719,7 @@ class TestErrorHandling:
         with patch('sqlite3.connect') as mock_connect:
             mock_connect.side_effect = sqlite3.Error("Database connection failed")
             
-            from main import track_job_application
+            from src.claude_job_agent.main import track_job_application
             
             # Should handle database errors gracefully
             try:
