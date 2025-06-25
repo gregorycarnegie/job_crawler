@@ -3,7 +3,6 @@
 # =============================================================================
 
 import json
-import logging
 import os
 import sqlite3
 import time
@@ -12,10 +11,12 @@ from typing import Any
 
 import httpx
 
+from claude_job_agent.core.logging_config import get_logger
+
 
 class HealthChecker:
     def __init__(self):
-        self.logger = logging.getLogger("job_agent.health")
+        self.logger = get_logger('monitoring.health')
         self.metrics_db = "data/metrics.db"
         self.init_metrics_db()
 
@@ -217,7 +218,7 @@ class HealthChecker:
             ''', (check_type, status, response_time, details))
         except Exception as e:
             # Log error but don't fail the health check
-            print(f"Warning: Failed to log health check: {e}")
+            self.logger.warning("Failed to log health check to database: %s", e)
 
     def log_api_metric(self, api_name: str, endpoint: str, status_code: int, response_time: float, request_size: int, response_size: int):
         """Log API usage metrics."""
@@ -228,7 +229,7 @@ class HealthChecker:
             ''', (api_name, endpoint, status_code, response_time, request_size, response_size))
         except Exception as e:
             # Log error but don't fail the health check
-            print(f"Warning: Failed to log API metric: {e}")
+            self.logger.warning("Failed to log API metric: %s", e)
 
     def log_performance_metric(self, metric_name: str, metric_value: float, context: str = ""):
         """Log performance metrics."""
@@ -239,7 +240,7 @@ class HealthChecker:
             ''', (metric_name, metric_value, context))
         except Exception as e:
             # Log error but don't fail the health check
-            print(f"Warning: Failed to log performance metric: {e}")
+            self.logger.warning("Failed to log performance metric: %s", e)
 
     def log_error(self, error_type: str, error_message: str, stack_trace: str, context: str = ""):
         """Log error information."""
@@ -250,7 +251,7 @@ class HealthChecker:
             ''', (error_type, error_message, stack_trace, context))
         except Exception as e:
             # Log error but don't fail the health check
-            print(f"Warning: Failed to log error: {e}")
+            self.logger.warning("Failed to log error to database: %s", e)
 
     def safe_db_execute(self, query, params=None, fetch=None):
         """Safely execute database query with proper connection handling."""

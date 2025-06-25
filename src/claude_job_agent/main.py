@@ -32,12 +32,24 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
+from claude_job_agent.core.logging_config import get_logger, setup_logging
+
+# Initialize logging at module level
+setup_logging()
+# logger = get_logger('main')
+startup_logger = get_logger('startup')
+api_logger = get_logger('api')
+search_logger = get_logger('search')
+app_logger = get_logger('applications')
+main_logger = get_logger('main')
+
 # Try to import MCP with proper error handling
 try:
     from mcp.server.fastmcp import FastMCP
+    startup_logger.info("Successfully imported FastMCP framework")
 except ImportError as e:
-    print(f"Error importing MCP: {e}")
-    print("Please ensure MCP is installed: pip install mcp")
+    startup_logger.critical("Failed to import MCP framework: %s", e)
+    startup_logger.critical("Installation required: pip install mcp")
     sys.exit(1)
 
 # Load environment variables
@@ -170,7 +182,7 @@ async def search_adzuna_jobs(query: str, location: str = "London", max_results: 
     app_key = os.getenv("ADZUNA_APP_KEY")
 
     if not app_id or not app_key:
-        print("Warning: Adzuna API credentials not configured")
+        api_logger.warning("Adzuna API credentials not configured - check ADZUNA_APP_ID and ADZUNA_APP_KEY")
         return []
 
     endpoint = "https://api.adzuna.com/v1/api/jobs/gb/search/1"
@@ -210,7 +222,7 @@ async def search_adzuna_jobs(query: str, location: str = "London", max_results: 
             return jobs
 
     except Exception as e:
-        print(f"Adzuna search failed: {e}")
+        api_logger.error("Adzuna search failed unexpectedly: %s", e, exc_info=True)
         return []
 
 def extract_basic_job_features(job: dict) -> dict[str, Any]:
@@ -371,18 +383,19 @@ def initialize_app():
         # Initialize database
         db = JobDatabase()
 
-        print(f"Job Agent initialized successfully. Database: {db.db_path}")
+        # Initialization success
+        startup_logger.info("Job Agent initialized successfully. Database: %s", db.db_path)
         return mcp, db
 
     except Exception as e:
-        print(f"Failed to initialize Job Agent: {e}")
+        startup_logger.critical("Failed to initialize Job Agent: %s", e, exc_info=True)
         raise
 
 # Initialize at module level
 try:
     mcp, db = initialize_app()
 except Exception as e:
-    print(f"Critical error during initialization: {e}")
+    startup_logger.critical("Critical error during initialization: %s", e, exc_info=True)
     sys.exit(1)
 
 # =============================================================================
@@ -472,7 +485,7 @@ async def search_jobs_with_analysis_framework(
                 )
                 conn.commit()
         except Exception as e:
-            print(f"Database logging error: {e}")
+            search_logger.warning("Failed to log search to database: %s", e)
             # Don't fail the entire operation for logging errors
 
         return enhanced_jobs
@@ -670,10 +683,10 @@ async def track_job_application(
 
         except sqlite3.Error as e:
             # Log error but continue with response
-            print(f"Database error in track_job_application: {e}")
+            app_logger.error("Database error during application tracking: %s", e, exc_info=True)
             application_id = -1  # Indicate database failure
         except Exception as e:
-            print(f"Unexpected error in track_job_application: {e}")
+            app_logger.error("Unexpected error during application tracking: %s", e, exc_info=True)
             application_id = -1
 
         # Calculate follow-up dates
@@ -1308,12 +1321,12 @@ async def create_career_progression_framework(
 def main():
     """Entry point for the MCP server."""
     try:
-        print("Starting Claude Job Search Agent...")
+        main_logger.info("Starting Claude Job Search Agent...")
         mcp.run()
     except KeyboardInterrupt:
-        print("\nShutting down Claude Job Search Agent...")
+        main_logger.info("Received shutdown signal, shutting down Claude Job Search Agent...")
     except Exception as e:
-        print(f"Error running MCP server: {e}")
+        main_logger.critical("Critical error running MCP server: %s", e, exc_info=True)
         sys.exit(1)
 
 if __name__ == "__main__":

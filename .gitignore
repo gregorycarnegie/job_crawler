@@ -1,8 +1,8 @@
 /uv.lock
 .idea/*
 __pycache__/*
-data/*
-backups/*
+data/
+backups/
 .env
 .coverage
 diagnose_claude_desktop.py
@@ -11,3 +11,4 @@ test_claude_desktop.py
 test_jobs.db
 *.pyc
 *.gitkeep
+logs/
