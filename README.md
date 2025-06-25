@@ -343,7 +343,7 @@ Structured templates for consistent job evaluation:
 
 ### Common Issues
 
-**1. Database Permission Errors**
+#### 1. Database Permission Errors
 
 ```bash
 # Fix database permissions
@@ -351,21 +351,21 @@ chmod 664 data/jobs.db
 chown user:group data/jobs.db
 ```
 
-**2. API Rate Limiting**
+#### 2. API Rate Limiting
 
 ```bash
 # Check API usage in logs
 tail -f logs/api_usage.log
 ```
 
-**3. Claude Desktop Connection Issues**
+#### 3. Claude Desktop Connection Issues
 
 ```bash
 # Validate MCP configuration
 python -c "from src.claude_job_agent.main import mcp; print('MCP server loaded successfully')"
 ```
 
-**4. Missing Dependencies**
+#### 4. Missing Dependencies
 
 ```bash
 # Install all dependencies
@@ -431,4 +431,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for the Claude Desktop community**
+## Made with ❤️ for the Claude Desktop community
