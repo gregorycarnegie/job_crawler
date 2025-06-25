@@ -27,7 +27,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from dotenv import load_dotenv
@@ -49,14 +49,14 @@ load_dotenv()
 
 @dataclass
 class UserProfile:
-    skills: List[Dict[str, Any]]
+    skills: list[dict[str, Any]]
     experience_years: int
     current_role: str
-    target_roles: List[str]
-    salary_expectation: Optional[int]
+    target_roles: list[str]
+    salary_expectation: int | None
     location_preference: str
     remote_preference: str
-    industry_preferences: List[str]
+    industry_preferences: list[str]
     company_size_preference: str
 
 @dataclass
@@ -65,8 +65,8 @@ class JobAnalysisFramework:
     job_title: str
     job_description: str
     company: str
-    analysis_prompts: Dict[str, str]
-    scoring_criteria: Dict[str, List[str]]
+    analysis_prompts: dict[str, str]
+    scoring_criteria: dict[str, list[str]]
 
 @dataclass
 class EnhancedJob:
@@ -74,19 +74,19 @@ class EnhancedJob:
     title: str
     company: str
     location: str
-    salary_min: Optional[int]
-    salary_max: Optional[int]
+    salary_min: int | None
+    salary_max: int | None
     contract_type: str
     url: str
     description: str
     posted_date: str
     source: str
-    
+
     # Analysis framework for Claude
-    analysis_framework: Optional[JobAnalysisFramework] = None
-    raw_requirements: Optional[List[str]] = None
-    benefits_mentioned: Optional[List[str]] = None
-    tech_stack: Optional[List[str]] = None
+    analysis_framework: JobAnalysisFramework | None = None
+    raw_requirements: list[str] | None = None
+    benefits_mentioned: list[str] | None = None
+    tech_stack: list[str] | None = None
 
 # =============================================================================
 # Database Setup (Lightweight)
@@ -97,15 +97,15 @@ class JobDatabase:
         # Use environment variable or default path
         if db_path is None:
             db_path = os.getenv("DATABASE_PATH", "data/jobs.db")
-        
+
         self.db_path = str(Path(db_path).resolve())  # Ensure absolute path
-        
+
         # Create directory if it doesn't exist
         db_dir = Path(self.db_path).parent
         db_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.init_db()
-    
+
     def init_db(self):
         """Initialize database with improved error handling."""
         max_retries = 3
@@ -127,7 +127,7 @@ class JobDatabase:
                             source TEXT,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         );
-                        
+
                         CREATE TABLE IF NOT EXISTS applications (
                             id INTEGER PRIMARY KEY,
                             job_id INTEGER,
@@ -137,13 +137,13 @@ class JobDatabase:
                             notes TEXT,
                             FOREIGN KEY (job_id) REFERENCES jobs (id)
                         );
-                        
+
                         CREATE TABLE IF NOT EXISTS user_profiles (
                             id INTEGER PRIMARY KEY,
                             profile_data TEXT,
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         );
-                        
+
                         CREATE TABLE IF NOT EXISTS job_searches (
                             id INTEGER PRIMARY KEY,
                             query TEXT,
@@ -164,15 +164,15 @@ class JobDatabase:
 # Job Search Functions (No AI API calls)
 # =============================================================================
 
-async def search_adzuna_jobs(query: str, location: str = "London", max_results: int = 20) -> List[Dict]:
+async def search_adzuna_jobs(query: str, location: str = "London", max_results: int = 20) -> list[dict]:
     """Enhanced Adzuna search with better error handling."""
     app_id = os.getenv("ADZUNA_APP_ID")
     app_key = os.getenv("ADZUNA_APP_KEY")
-    
+
     if not app_id or not app_key:
         print("Warning: Adzuna API credentials not configured")
         return []
-    
+
     endpoint = "https://api.adzuna.com/v1/api/jobs/gb/search/1"
     params = {
         "app_id": app_id,
@@ -182,13 +182,13 @@ async def search_adzuna_jobs(query: str, location: str = "London", max_results: 
         "where": location,
         "sort_by": "date",
     }
-    
+
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(endpoint, params=params)
             response.raise_for_status()
             data = response.json()
-            
+
             jobs = []
             for item in data.get("results", []):
                 # Extract basic info and let Claude do the analysis
@@ -206,18 +206,18 @@ async def search_adzuna_jobs(query: str, location: str = "London", max_results: 
                     "category": item.get("category", {}).get("label", "")
                 }
                 jobs.append(job)
-            
+
             return jobs
-            
+
     except Exception as e:
         print(f"Adzuna search failed: {e}")
         return []
 
-def extract_basic_job_features(job: Dict) -> Dict[str, Any]:
+def extract_basic_job_features(job: dict) -> dict[str, Any]:
     """Extract structured features from job data for Claude analysis."""
     description = (job.get("description") or "").lower()
     title = (job.get("title") or "").lower()
-    
+
     # Common tech keywords
     tech_keywords = [
         "python", "javascript", "java", "c++", "c#", "ruby", "php", "go", "rust",
@@ -226,7 +226,7 @@ def extract_basic_job_features(job: Dict) -> Dict[str, Any]:
         "sql", "postgresql", "mysql", "mongodb", "redis", "elasticsearch",
         "git", "agile", "scrum", "devops", "ci/cd", "microservices", "api"
     ]
-    
+
     # Experience level indicators
     experience_indicators = {
         "junior": ["junior", "graduate", "entry level", "1-2 years", "early career"],
@@ -234,41 +234,41 @@ def extract_basic_job_features(job: Dict) -> Dict[str, Any]:
         "senior": ["senior", "lead", "5+ years", "7+ years", "expert", "principal"],
         "management": ["manager", "director", "head of", "vp", "cto", "lead team"]
     }
-    
+
     # Remote work indicators
     remote_indicators = {
         "remote": ["remote", "work from home", "wfh", "distributed"],
         "hybrid": ["hybrid", "flexible", "2-3 days", "part remote"],
         "onsite": ["office", "on-site", "in person", "london office"]
     }
-    
+
     # Extract features
     found_tech = [tech for tech in tech_keywords if tech in description or tech in title]
-    
+
     experience_level = "not_specified"
     for level, keywords in experience_indicators.items():
         if any(keyword in description or keyword in title for keyword in keywords):
             experience_level = level
             break
-    
+
     remote_policy = "not_specified"
     for policy, keywords in remote_indicators.items():
         if any(keyword in description for keyword in keywords):
             remote_policy = policy
             break
-    
+
     # Salary analysis
     salary_info = {}
     salary_min = job.get("salary_min")
     salary_max = job.get("salary_max")
 
-    if salary_min and salary_max and isinstance(salary_min, (int, float)) and isinstance(salary_max, (int, float)):
+    if salary_min and salary_max and isinstance(salary_min, int | float) and isinstance(salary_max, int | float):
         salary_info = {
             "min": salary_min,
             "max": salary_max,
             "average": (salary_min + salary_max) / 2
         }
-    
+
     return {
         "tech_stack": found_tech,
         "experience_level": experience_level,
@@ -280,11 +280,11 @@ def extract_basic_job_features(job: Dict) -> Dict[str, Any]:
         ])
     }
 
-def create_analysis_framework(job: Dict) -> JobAnalysisFramework:
+def create_analysis_framework(job: dict) -> JobAnalysisFramework:
     """Create a structured framework for Claude to analyze the job."""
-    
+
     # Extract basic features
-    features = extract_basic_job_features(job)
+    _features = extract_basic_job_features(job)
 
     # Create analysis prompts for Claude
     analysis_prompts = {
@@ -296,7 +296,7 @@ def create_analysis_framework(job: Dict) -> JobAnalysisFramework:
         4. Key responsibilities
         5. Company benefits offered
         6. Any red flags or concerning requirements
-        
+
         Job Title: {job.get('title', '')}
         Company: {job.get('company', '')}
         Description: {job.get('description', '')[:800]}
@@ -305,14 +305,14 @@ def create_analysis_framework(job: Dict) -> JobAnalysisFramework:
         Score this job compatibility for a candidate with:
         - Skills: [TO BE PROVIDED BY USER]
         - Experience: [TO BE PROVIDED BY USER]
-        
+
         Consider:
         - Technical skill match
         - Experience level alignment
         - Role responsibilities fit
         - Salary expectations vs offering
         - Remote work preferences
-        
+
         Provide a score 1-10 with detailed reasoning.
         """,
         "application_strategy": """
@@ -321,7 +321,7 @@ def create_analysis_framework(job: Dict) -> JobAnalysisFramework:
         2. Cover letter talking points
         3. Potential interview questions
         4. Research areas about the company
-        
+
         Focus on what would make a candidate stand out for this specific role.
         """,
     }
@@ -367,13 +367,13 @@ def initialize_app():
     try:
         # Initialize MCP server
         mcp = FastMCP(name="Claude Desktop Job Search Agent")
-        
+
         # Initialize database
         db = JobDatabase()
-        
+
         print(f"Job Agent initialized successfully. Database: {db.db_path}")
         return mcp, db
-        
+
     except Exception as e:
         print(f"Failed to initialize Job Agent: {e}")
         raise
@@ -395,13 +395,13 @@ async def search_jobs_with_analysis_framework(
     location: str = "London",
     max_results: int = 15,
     include_analysis_framework: bool = True
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Search for jobs and provide structured analysis frameworks for Claude to process.
-    
+
     This tool finds jobs and prepares them with analysis prompts and scoring criteria
     so Claude can provide intelligent insights without external AI API calls.
-    
+
     Parameters:
     - query: Job search keywords (e.g., "python developer", "data scientist")
     - location: Job location (default: London)
@@ -483,17 +483,17 @@ async def search_jobs_with_analysis_framework(
 
 @mcp.tool()
 async def create_job_compatibility_template(
-    user_skills: List[str],
+    user_skills: list[str],
     experience_years: int,
-    salary_expectation: Optional[int] = None,
+    salary_expectation: int | None = None,
     remote_preference: str = "hybrid"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a compatibility analysis template that Claude can use to score jobs.
-    
+
     This provides Claude with a structured framework to consistently evaluate
     job compatibility without needing external AI API calls.
-    
+
     Parameters:
     - user_skills: List of user's technical skills
     - experience_years: Years of professional experience
@@ -615,10 +615,10 @@ async def track_job_application(
     application_date: str,
     status: str = "applied",
     notes: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Track a job application with follow-up reminders and next steps.
-    
+
     Parameters:
     - job_url: URL of the job posting
     - company_name: Name of the company
@@ -744,16 +744,16 @@ async def track_job_application(
         return {"error": f"Failed to track application: {str(e)}"}
 
 @mcp.tool()
-async def get_application_status_summary() -> Dict[str, Any]:
+async def get_application_status_summary() -> dict[str, Any]:
     """
     Get a summary of all tracked job applications and their current status.
-    
+
     Provides an overview of application pipeline and follow-up actions needed.
     """
     try:
         # Use the same database path resolution as other functions
         db_path = os.getenv("DATABASE_PATH", db.db_path)
-        
+
         with sqlite3.connect(db_path, timeout=10) as conn:
             cursor = conn.cursor()
 
@@ -805,7 +805,7 @@ async def get_application_status_summary() -> Dict[str, Any]:
         total_apps = len(applications)
         responded_apps = len([app for app in applications if app['status'] != 'applied'])
         interview_apps = len([app for app in applications if 'interview' in app['status']])
-        
+
         # Calculate average response time for responded applications
         if responded_apps > 0:
             avg_response_time = sum(app['days_since_application'] for app in applications if app['status'] != 'applied') / responded_apps
@@ -834,10 +834,10 @@ async def get_application_status_summary() -> Dict[str, Any]:
                 "Keep detailed notes on all interactions for future reference",
             ],
         }
-        
+
     except Exception as e:
         return {"error": f"Failed to get application summary: {str(e)}"}
-    
+
 
 @mcp.tool()
 async def generate_application_templates(
@@ -845,13 +845,13 @@ async def generate_application_templates(
     company_name: str,
     job_description: str,
     user_background: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Generate structured templates for job applications that Claude can customize.
-    
+
     Provides frameworks for CVs, cover letters, and interview prep without
     requiring external AI API calls.
-    
+
     Parameters:
     - job_title: The position being applied for
     - company_name: Name of the hiring company
@@ -862,7 +862,7 @@ async def generate_application_templates(
         # Validate parameters
         if not all([job_title, company_name, job_description, user_background]):
             return {"error": "All parameters are required"}
-        
+
         # Extract key info from job description
         description_lower = job_description.lower()
 
@@ -882,13 +882,13 @@ async def generate_application_templates(
             for benefit, keywords in benefit_keywords.items()
             if any(keyword in description_lower for keyword in keywords)
         )
-        
+
         # CV optimization template
         cv_template = {
             "summary_section": f"""
-            Template: "[X] years of experience in [relevant field] with expertise in [key skills from job description]. 
+            Template: "[X] years of experience in [relevant field] with expertise in [key skills from job description].
             Proven track record of [relevant achievements]. Seeking to leverage [specific skills] to contribute to {company_name}'s [relevant company goal/mission]."
-            
+
             Customization notes:
             - Replace bracketed placeholders with specific details
             - Highlight skills that match job requirements exactly
@@ -918,8 +918,8 @@ async def generate_application_templates(
         # Cover letter template
         cover_letter_template = {
             "opening_paragraph": f"""
-            Template: "I am writing to express my strong interest in the {job_title} position at {company_name}. 
-            With [X years] of experience in [relevant field] and expertise in [key skills from job], 
+            Template: "I am writing to express my strong interest in the {job_title} position at {company_name}.
+            With [X years] of experience in [relevant field] and expertise in [key skills from job],
             I am excited about the opportunity to contribute to [specific company goal/project mentioned in job]."
             """,
 
@@ -930,8 +930,8 @@ async def generate_application_templates(
             },
 
             "closing_paragraph": f"""
-            Template: "I would welcome the opportunity to discuss how my background in [relevant area] 
-            and passion for [relevant field/mission] can contribute to {company_name}'s continued success. 
+            Template: "I would welcome the opportunity to discuss how my background in [relevant area]
+            and passion for [relevant field/mission] can contribute to {company_name}'s continued success.
             Thank you for considering my application."
             """
         }
@@ -983,7 +983,7 @@ async def generate_application_templates(
                 "✓ Prepare questions about role and company culture"
             ]
         }
-        
+
     except Exception as e:
         return {"error": f"Failed to generate application templates: {str(e)}"}
 
@@ -992,13 +992,13 @@ async def analyze_job_market_data(
     location: str = "London",
     job_category: str = "Technology",
     timeframe_days: int = 30
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Analyze job market trends using stored search data and provide insights.
-    
+
     This tool analyzes job search patterns and provides market intelligence
     without requiring external API calls.
-    
+
     Parameters:
     - location: Geographic area to analyze
     - job_category: Industry/job category
@@ -1008,47 +1008,47 @@ async def analyze_job_market_data(
         # Analyze stored job search data
         with sqlite3.connect(db.db_path, timeout=10) as conn:
             cursor = conn.cursor()
-            
+
             # Get recent search patterns
-            cursor.execute('''
+            cursor.execute(f'''
                 SELECT query, COUNT(*) as search_count, AVG(results_count) as avg_results
-                FROM job_searches 
-                WHERE search_date > datetime('now', '-{} days')
+                FROM job_searches
+                WHERE search_date > datetime('now', '-{timeframe_days} days')
                 GROUP BY query
                 ORDER BY search_count DESC
                 LIMIT 10
-            '''.format(timeframe_days))
-            
+            ''')
+
             popular_searches = [
                 {"query": row[0], "search_count": row[1], "avg_results": row[2]}
                 for row in cursor.fetchall()
             ]
-            
+
             # Get job data trends
-            cursor.execute('''
+            cursor.execute(f'''
                 SELECT company, COUNT(*) as job_count
-                FROM jobs 
-                WHERE created_at > datetime('now', '-{} days')
+                FROM jobs
+                WHERE created_at > datetime('now', '-{timeframe_days} days')
                 GROUP BY company
                 ORDER BY job_count DESC
                 LIMIT 10
-            '''.format(timeframe_days))
-            
+            ''')
+
             top_hiring_companies = [
                 {"company": row[0], "job_count": row[1]}
                 for row in cursor.fetchall()
             ]
-            
+
             # Application tracking insights
-            cursor.execute('''
+            cursor.execute(f'''
                 SELECT status, COUNT(*) as count
                 FROM applications
-                WHERE applied_date > date('now', '-{} days')
+                WHERE applied_date > date('now', '-{timeframe_days} days')
                 GROUP BY status
-            '''.format(timeframe_days))
-            
+            ''')
+
             application_stats = {row[0]: row[1] for row in cursor.fetchall()}
-        
+
         # Market insights based on common patterns
         market_insights = {
             "demand_indicators": {
@@ -1071,7 +1071,7 @@ async def analyze_job_market_data(
             },
             "remote_work_trends": {
                 "fully_remote": "25-30% of tech positions",
-                "hybrid": "50-60% of tech positions", 
+                "hybrid": "50-60% of tech positions",
                 "onsite_only": "15-20% of tech positions",
                 "trend": "Hybrid work arrangements becoming the standard"
             },
@@ -1081,7 +1081,7 @@ async def analyze_job_market_data(
                 "application_response_time": "1-2 weeks for initial response, 3-4 weeks for full process"
             }
         }
-        
+
         return {
             "analysis_period": f"Last {timeframe_days} days",
             "location": location,
@@ -1105,23 +1105,23 @@ async def analyze_job_market_data(
                 "skill_development": "Continuous learning is essential in tech roles"
             }
         }
-        
+
     except Exception as e:
         return {"error": f"Failed to analyze job market data: {str(e)}"}
 
 @mcp.tool()
 async def create_career_progression_framework(
     current_role: str,
-    target_roles: List[str],
-    current_skills: List[str],
+    target_roles: list[str],
+    current_skills: list[str],
     timeline_months: int = 24
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a structured career progression framework that Claude can use to provide guidance.
-    
+
     This tool provides comprehensive career planning templates without requiring
     external AI API calls.
-    
+
     Parameters:
     - current_role: Current job title/position
     - target_roles: List of desired future roles
