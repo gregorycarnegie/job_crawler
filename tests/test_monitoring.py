@@ -44,7 +44,7 @@ for key, value in test_env.items():
 
 @pytest.fixture
 def temp_databases():
-    """Create temporary databases for testing with proper Windows cleanup."""
+    """Create temporary databases for testing with proper Windows clean-up."""
     # Create temporary files
     main_db_fd, main_db_path = tempfile.mkstemp(suffix=".db", prefix="test_main_")
     metrics_db_fd, metrics_db_path = tempfile.mkstemp(suffix=".db", prefix="test_metrics_")
@@ -83,7 +83,7 @@ def temp_databases():
 
     yield main_db_path, metrics_db_path
 
-    # Cleanup with retries for Windows
+    # Clean-up with retries for Windows
     def safe_cleanup(path):
         for attempt in range(3):
             try:
@@ -493,12 +493,12 @@ class TestBackupManager:
                 os.environ["DATABASE_PATH"] = original_path
 
     def test_cleanup_old_backups(self, temp_databases):
-        """Test cleanup of old backup files."""
+        """Test clean-up of old backup files."""
         main_db, metrics_db = temp_databases
 
         backup_manager = BackupManager()
 
-        # Create old backup file
+        # Create an old backup file
         old_date = datetime.now() - timedelta(days=MonitoringConfig.BACKUP_RETENTION_DAYS + 1)
         old_backup = backup_manager.backup_dir / "old_backup.gz"
         old_backup.touch()
@@ -587,7 +587,7 @@ class TestMonitoringService:
         assert count == 0  # Old data should be removed
 
     def test_cleanup_old_metrics(self, temp_databases):
-        """Test cleanup of old metrics data."""
+        """Test clean-up of old metrics data."""
         main_db, metrics_db = temp_databases
 
         service = MonitoringService()

@@ -73,7 +73,7 @@ class UserProfile:
 
 @dataclass
 class JobAnalysisFramework:
-    """Framework for Claude to analyze jobs consistently."""
+    """Framework for Claude to analyse jobs consistently."""
     job_title: str
     job_description: str
     company: str
@@ -293,7 +293,7 @@ def extract_basic_job_features(job: dict) -> dict[str, Any]:
     }
 
 def create_analysis_framework(job: dict) -> JobAnalysisFramework:
-    """Create a structured framework for Claude to analyze the job."""
+    """Create a structured framework for Claude to analyse the job."""
 
     # Extract basic features
     _features = extract_basic_job_features(job)
@@ -464,7 +464,7 @@ async def search_jobs_with_analysis_framework(
                     "extracted_features": features
                 }
 
-                # Add analysis framework if requested
+                # Add an analysis framework if requested
                 if include_analysis_framework:
                     framework = create_analysis_framework(job)
                     enhanced_job["analysis_framework"] = asdict(framework)
@@ -1007,13 +1007,13 @@ async def analyze_job_market_data(
     timeframe_days: int = 30
 ) -> dict[str, Any]:
     """
-    Analyze job market trends using stored search data and provide insights.
+    Analyse job market trends using stored search data and provide insights.
 
-    This tool analyzes job search patterns and provides market intelligence
+    This tool analyses job search patterns and provides market intelligence
     without requiring external API calls.
 
     Parameters:
-    - location: Geographic area to analyze
+    - location: Geographic area to analyse
     - job_category: Industry/job category
     - timeframe_days: Number of days to look back for analysis
     """

@@ -15,7 +15,7 @@ class ColouredFormatter(logging.Formatter):
     RESET = '\033[0m'
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format with colors if supported."""
+        """Format with colours if supported."""
         if sys.stderr.isatty():  # Only colorize if output to terminal
             color = self.COLORS.get(record.levelname, '')
             record.levelname = f"{color}{record.levelname}{self.RESET}"

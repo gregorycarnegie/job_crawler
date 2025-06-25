@@ -9,7 +9,7 @@ A powerful job search automation tool designed specifically for Claude Desktop, 
 ### Core Functionality
 
 - **Multi-Source Job Aggregation** - Search across multiple job platforms (Adzuna, with extensible architecture)
-- **Intelligent Job Analysis** - Structured frameworks for Claude to analyze job compatibility
+- **Intelligent Job Analysis** - Structured frameworks for Claude to analyse job compatibility
 - **Application Tracking** - Comprehensive tracking system with follow-up reminders
 - **Career Progression Planning** - Personalized roadmaps and skill gap analysis
 - **Market Intelligence** - Job market trends and salary insights

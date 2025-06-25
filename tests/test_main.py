@@ -132,7 +132,7 @@ def temp_database():
         elif "DATABASE_PATH" in os.environ:
             del os.environ["DATABASE_PATH"]
 
-        # Cleanup with retry for Windows
+        # Clean-up with retry for Windows
         max_attempts = 5
         for attempt in range(max_attempts):
             try:

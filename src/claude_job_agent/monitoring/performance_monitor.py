@@ -57,7 +57,7 @@ class PerformanceMonitor:
             return {"error": str(e)}
 
     async def analyze_api_performance(self) -> dict[str, Any]:
-        """Analyze API performance trends."""
+        """Analyse API performance trends."""
         with sqlite3.connect(self.health_checker.metrics_db) as conn:
             cursor = conn.cursor()
 

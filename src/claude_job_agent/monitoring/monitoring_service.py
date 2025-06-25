@@ -68,10 +68,10 @@ class MonitoringService:
         # Create database backup
         self.backup_manager.backup_database()
 
-        # Cleanup old backups
+        # Clean-up old backups
         self.backup_manager.cleanup_old_backups()
 
-        # Cleanup old metrics
+        # Clean-up old metrics
         self.cleanup_old_metrics()
 
         # Rotate logs
@@ -90,7 +90,8 @@ class MonitoringService:
             self.logger.error(f"Metrics cleanup failed: {e}")
 
     # TODO Rename this here and in `cleanup_old_metrics`
-    def _extracted_from_cleanup_old_metrics_7(self, conn, cutoff_date):
+    @staticmethod
+    def _extracted_from_cleanup_old_metrics_7(conn, cutoff_date):
         conn.execute("DELETE FROM health_checks WHERE timestamp < ?", (cutoff_date,))
         conn.execute("DELETE FROM api_metrics WHERE timestamp < ?", (cutoff_date,))
         conn.execute("DELETE FROM performance_metrics WHERE timestamp < ?", (cutoff_date,))

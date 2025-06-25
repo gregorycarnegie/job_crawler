@@ -11,7 +11,7 @@ Features:
 - Component-specific loggers
 - Performance and error tracking
 - JSON logging option for structured logs
-- Log rotation and cleanup
+- Log rotation and clean-up
 - Development vs production configurations
 
 Usage:
@@ -31,6 +31,7 @@ import logging.handlers
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from .coloured_formatter import ColouredFormatter
 from .json_formatter import JSONFormatter
@@ -202,12 +203,12 @@ class LoggingConfig:
         if not self.enable_api_logging:
             return logging.getLogger('claude_job_agent.api.disabled')
 
-        api_logger = logging.getLogger('claude_job_agent.api')
+        _api_logger = logging.getLogger('claude_job_agent.api')
 
-        if api_logger.name in self._configured_loggers:
-            return api_logger
+        if _api_logger.name in self._configured_loggers:
+            return _api_logger
 
-        api_logger.setLevel(logging.DEBUG)
+        _api_logger.setLevel(logging.DEBUG)
 
         if self.enable_file:
             # API calls in structured format
@@ -219,11 +220,11 @@ class LoggingConfig:
             )
             api_handler.setFormatter(JSONFormatter())
             api_handler.setLevel(logging.DEBUG)
-            api_logger.addHandler(api_handler)
+            _api_logger.addHandler(api_handler)
 
-        api_logger.propagate = False
-        self._configured_loggers.add(api_logger.name)
-        return api_logger
+        _api_logger.propagate = False
+        self._configured_loggers.add(_api_logger.name)
+        return _api_logger
 
 
 # Global configuration instance
@@ -361,7 +362,7 @@ def configure_external_loggers() -> None:
         logging.getLogger(lib_name).setLevel(level)
 
 
-def get_log_stats() -> dict[str, any]:
+def get_log_stats() -> dict[str, Any]:
     """Get statistics about current logging configuration."""
     global _config, _initialized
 

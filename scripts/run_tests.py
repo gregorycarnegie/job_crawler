@@ -357,7 +357,7 @@ def create_test_database():
                 return False
 
         finally:
-            # Enhanced cleanup for Windows
+            # Enhanced clean-up for Windows
             gc.collect()
             time.sleep(0.1)
 
@@ -444,10 +444,8 @@ def main():
     print("=" * 50)
 
     # Test results tracking
-    results = {"Dependencies": check_dependencies()}
-
-    results["Configuration"] = validate_configuration()
-    results["Syntax Checks"] = run_syntax_checks()
+    results = {"Dependencies": check_dependencies(), "Configuration": validate_configuration(),
+               "Syntax Checks": run_syntax_checks()}
 
     if not all([results["Dependencies"], results["Configuration"]]):
         print("\n❌ Pre-flight checks failed. Cannot continue with tests.")
@@ -463,7 +461,7 @@ def main():
         results["Monitor Tests"] = run_monitor_tests(args.verbose)
     else:
         _extracted_from_main_36(results, args)
-    # Generate final report
+    # Generate a final report
     success = generate_test_report(results)
 
     # Exit with appropriate code
