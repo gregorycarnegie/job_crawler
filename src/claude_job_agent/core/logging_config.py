@@ -330,7 +330,7 @@ def log_api_call(api_name: str, endpoint: str, method: str, status_code: int,
         response_time: Response time in seconds
         **kwargs: Additional context data
     """
-    api_logger = get_logger('api')
+    _api_logger = get_logger('api')
 
     extra_data = {
         'api_name': api_name,
@@ -341,7 +341,7 @@ def log_api_call(api_name: str, endpoint: str, method: str, status_code: int,
         **kwargs
     }
 
-    api_logger.info("API call", extra=extra_data)
+    _api_logger.info("API call", extra=extra_data)
 
 
 def configure_external_loggers() -> None:

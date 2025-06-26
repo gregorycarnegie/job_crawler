@@ -437,8 +437,8 @@ async def search_jobs_with_analysis_framework(
         try:
             adzuna_jobs = await search_adzuna_jobs(query, location, max_results)
             all_jobs.extend(adzuna_jobs)
-        except Exception as e:
-            print(f"Adzuna search error: {e}")
+        except Exception as e0:
+            print(f"Adzuna search error: {e0}")
 
         # Remove duplicates based on company + title
         seen = set()
@@ -471,12 +471,12 @@ async def search_jobs_with_analysis_framework(
 
                 enhanced_jobs.append(enhanced_job)
 
-            except Exception as e:
-                print(f"Error enhancing job {job.get('title', 'Unknown')}: {e}")
-                # Include job without enhancement rather than skipping
+            except Exception as e1:
+                print(f"Error enhancing job {job.get('title', 'Unknown')}: {e1}")
+                # Include the job without enhancement rather than skipping
                 enhanced_jobs.append(job)
 
-        # Log search to database (with error handling)
+        # Log search to the database (with error handling)
         try:
             with sqlite3.connect(db.db_path, timeout=10) as conn:
                 conn.execute(
@@ -484,15 +484,15 @@ async def search_jobs_with_analysis_framework(
                     (query, len(enhanced_jobs))
                 )
                 conn.commit()
-        except Exception as e:
-            search_logger.warning("Failed to log search to database: %s", e)
+        except Exception as e2:
+            search_logger.warning("Failed to log search to database: %s", e2)
             # Don't fail the entire operation for logging errors
 
         return enhanced_jobs
 
-    except Exception as e:
-        print(f"Error in search_jobs_with_analysis_framework: {e}")
-        return {"error": f"Search failed: {str(e)}"}
+    except Exception as e3:
+        print(f"Error in search_jobs_with_analysis_framework: {e3}")
+        return {"error": f"Search failed: {str(e3)}"}
 
 @mcp.tool()
 async def create_job_compatibility_template(
