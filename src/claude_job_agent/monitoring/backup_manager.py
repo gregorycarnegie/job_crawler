@@ -48,7 +48,9 @@ class BackupManager:
                 time.sleep(0.1)
 
             except Exception as backup_error:
-                self.logger.warning(f"SQLite backup failed: {backup_error}, trying file copy")
+                self.logger.warning(
+                    f"SQLite backup failed: {backup_error}, trying file copy"
+                )
                 # Fallback to file copy
                 try:
                     shutil.copy2(db_path, backup_file)
@@ -58,8 +60,8 @@ class BackupManager:
 
             # Compress backup
             try:
-                with open(backup_file, 'rb') as f_in:
-                    with gzip.open(f"{backup_file}.gz", 'wb') as f_out:
+                with open(backup_file, "rb") as f_in:
+                    with gzip.open(f"{backup_file}.gz", "wb") as f_out:
                         shutil.copyfileobj(f_in, f_out)
 
                 # Remove uncompressed backup with retry for Windows
@@ -86,7 +88,9 @@ class BackupManager:
     def cleanup_old_backups(self):
         """Remove old backup files."""
         try:
-            cutoff_date = datetime.now() - timedelta(days=MonitoringConfig.BACKUP_RETENTION_DAYS)
+            cutoff_date = datetime.now() - timedelta(
+                days=MonitoringConfig.BACKUP_RETENTION_DAYS
+            )
 
             for backup_file in self.backup_dir.glob("*.gz"):
                 if backup_file.stat().st_mtime < cutoff_date.timestamp():

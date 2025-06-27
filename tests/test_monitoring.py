@@ -42,12 +42,15 @@ for key, value in test_env.items():
 # Test Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def temp_databases():
     """Create temporary databases for testing with proper Windows clean-up."""
     # Create temporary files
     main_db_fd, main_db_path = tempfile.mkstemp(suffix=".db", prefix="test_main_")
-    metrics_db_fd, metrics_db_path = tempfile.mkstemp(suffix=".db", prefix="test_metrics_")
+    metrics_db_fd, metrics_db_path = tempfile.mkstemp(
+        suffix=".db", prefix="test_metrics_"
+    )
 
     # Close file descriptors immediately to avoid permission issues
     os.close(main_db_fd)
@@ -60,7 +63,8 @@ def temp_databases():
     # Create main database structure
     conn = sqlite3.connect(main_db_path)
     try:
-        conn.executescript('''
+        conn.executescript(
+            """
             CREATE TABLE IF NOT EXISTS jobs (
                 id INTEGER PRIMARY KEY,
                 title TEXT,
@@ -76,7 +80,8 @@ def temp_databases():
                 status TEXT,
                 applied_date TEXT
             );
-        ''')
+        """
+        )
         conn.commit()
     finally:
         conn.close()
@@ -106,6 +111,7 @@ def temp_databases():
     elif "DATABASE_PATH" in os.environ:
         del os.environ["DATABASE_PATH"]
 
+
 @pytest.fixture
 def mock_httpx_response():
     """Mock httpx response for API testing."""
@@ -116,6 +122,7 @@ def mock_httpx_response():
     mock_response.json.return_value = {"results": []}
     return mock_response
 
+
 @pytest.fixture
 def mock_httpx_client(mock_httpx_response):
     """Mock httpx client."""
@@ -125,9 +132,11 @@ def mock_httpx_client(mock_httpx_response):
     mock_client.__aexit__.return_value = None
     return mock_client
 
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def create_health_checker_with_db(metrics_db_path):
     """Create health checker with properly initialized database."""
@@ -135,6 +144,7 @@ def create_health_checker_with_db(metrics_db_path):
     health_checker.metrics_db = metrics_db_path
     health_checker.init_metrics_db()
     return health_checker
+
 
 def safe_db_operation(db_path, operation):
     """Safely perform database operation with proper connection handling."""
@@ -146,9 +156,11 @@ def safe_db_operation(db_path, operation):
     finally:
         conn.close()
 
+
 # =============================================================================
 # Health Checker Tests
 # =============================================================================
+
 
 class TestHealthChecker:
     """Test health checking functionality."""
@@ -166,7 +178,12 @@ class TestHealthChecker:
             return [row[0] for row in cursor.fetchall()]
 
         tables = safe_db_operation(metrics_db, check_tables)
-        expected_tables = ["health_checks", "api_metrics", "performance_metrics", "error_logs"]
+        expected_tables = [
+            "health_checks",
+            "api_metrics",
+            "performance_metrics",
+            "error_logs",
+        ]
 
         for table in expected_tables:
             assert table in tables, f"Table {table} not found in metrics database"
@@ -180,8 +197,14 @@ class TestHealthChecker:
 
         # Add some test data
         def add_test_data(conn):
-            conn.execute("INSERT INTO jobs (title, company) VALUES (?, ?)", ("Test Job", "Test Company"))
-            conn.execute("INSERT INTO applications (job_id, status) VALUES (?, ?)", (1, "applied"))
+            conn.execute(
+                "INSERT INTO jobs (title, company) VALUES (?, ?)",
+                ("Test Job", "Test Company"),
+            )
+            conn.execute(
+                "INSERT INTO applications (job_id, status) VALUES (?, ?)",
+                (1, "applied"),
+            )
 
         safe_db_operation(main_db, add_test_data)
 
@@ -210,7 +233,10 @@ class TestHealthChecker:
 
             assert result["status"] == "unhealthy"
             assert "error" in result
-            assert "Database check failed" in result["details"] or "Database file does not exist" in result["details"]
+            assert (
+                "Database check failed" in result["details"]
+                or "Database file does not exist" in result["details"]
+            )
         finally:
             if original_path:
                 os.environ["DATABASE_PATH"] = original_path
@@ -218,13 +244,15 @@ class TestHealthChecker:
                 del os.environ["DATABASE_PATH"]
 
     @pytest.mark.asyncio
-    async def test_adzuna_api_health_check_success(self, temp_databases, mock_httpx_client):
+    async def test_adzuna_api_health_check_success(
+        self, temp_databases, mock_httpx_client
+    ):
         """Test successful Adzuna API health check."""
         main_db, metrics_db = temp_databases
 
         health_checker = create_health_checker_with_db(metrics_db)
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             result = await health_checker.check_adzuna_api()
 
             assert result["status"] == "healthy"
@@ -232,7 +260,9 @@ class TestHealthChecker:
             assert "API responsive" in result["details"]
 
     @pytest.mark.asyncio
-    async def test_adzuna_api_health_check_failure(self, temp_databases, mock_httpx_client):
+    async def test_adzuna_api_health_check_failure(
+        self, temp_databases, mock_httpx_client
+    ):
         """Test Adzuna API health check failure."""
         main_db, metrics_db = temp_databases
 
@@ -241,7 +271,7 @@ class TestHealthChecker:
         # Mock API failure
         mock_httpx_client.get.side_effect = Exception("API Error")
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             result = await health_checker.check_adzuna_api()
 
             assert result["status"] == "unhealthy"
@@ -294,8 +324,8 @@ class TestHealthChecker:
 
         assert result is not None
         assert result[2] == "database"  # check_type
-        assert result[3] == "healthy"   # status
-        assert result[4] == 0.5         # response_time
+        assert result[3] == "healthy"  # status
+        assert result[4] == 0.5  # response_time
         assert result[5] == "Test details"  # details
 
     def test_log_api_metric(self, temp_databases):
@@ -314,14 +344,16 @@ class TestHealthChecker:
         result = safe_db_operation(metrics_db, verify_metric)
 
         assert result is not None
-        assert result[2] == "adzuna"    # api_name
-        assert result[3] == "search"    # endpoint
-        assert result[4] == 200         # status_code
-        assert result[5] == 1.5         # response_time
+        assert result[2] == "adzuna"  # api_name
+        assert result[3] == "search"  # endpoint
+        assert result[4] == 200  # status_code
+        assert result[5] == 1.5  # response_time
+
 
 # =============================================================================
 # Performance Monitor Tests
 # =============================================================================
+
 
 class TestPerformanceMonitor:
     """Test performance monitoring functionality."""
@@ -342,11 +374,13 @@ class TestPerformanceMonitor:
                 "memory_available_gb": 8.0,
                 "disk_percent": 45.0,
                 "disk_free_gb": 100.0,
-                "timestamp": "2024-01-15T10:00:00"
+                "timestamp": "2024-01-15T10:00:00",
             }
 
         # Patch the method directly instead of trying to patch psutil
-        with patch.object(monitor, 'collect_system_metrics', side_effect=mock_collect_metrics):
+        with patch.object(
+            monitor, "collect_system_metrics", side_effect=mock_collect_metrics
+        ):
             result = await monitor.collect_system_metrics()
 
             assert result["cpu_percent"] == 25.5
@@ -366,11 +400,11 @@ class TestPerformanceMonitor:
 
         # Mock ImportError for psutil
         def mock_import(name, *args, **kwargs):
-            if name == 'psutil':
+            if name == "psutil":
                 raise ImportError("No module named 'psutil'")
             return __builtins__.__import__(name, *args, **kwargs)
 
-        with patch('builtins.__import__', side_effect=mock_import):
+        with patch("builtins.__import__", side_effect=mock_import):
             result = await monitor.collect_system_metrics()
 
             assert "error" in result
@@ -386,15 +420,18 @@ class TestPerformanceMonitor:
 
         # Add test API metrics
         def add_metrics(conn):
-            conn.executemany('''
+            conn.executemany(
+                """
                 INSERT INTO api_metrics (api_name, endpoint, status_code, response_time)
                 VALUES (?, ?, ?, ?)
-            ''', [
-                ("adzuna", "search", 200, 1.5),
-                ("adzuna", "search", 200, 2.0),
-                ("adzuna", "search", 500, 5.0),  # Error case
-                ("reed", "search", 200, 1.0),
-            ])
+            """,
+                [
+                    ("adzuna", "search", 200, 1.5),
+                    ("adzuna", "search", 200, 2.0),
+                    ("adzuna", "search", 500, 5.0),  # Error case
+                    ("reed", "search", 200, 1.0),
+                ],
+            )
 
         safe_db_operation(metrics_db, add_metrics)
 
@@ -406,8 +443,12 @@ class TestPerformanceMonitor:
         adzuna_metrics = result["adzuna"]
         assert adzuna_metrics["request_count"] == 3
         assert adzuna_metrics["error_count"] == 1
-        assert abs(adzuna_metrics["error_rate"] - 1/3) < 0.001  # Float comparison with tolerance
-        assert abs(adzuna_metrics["success_rate"] - 2/3) < 0.001  # Float comparison with tolerance
+        assert (
+            abs(adzuna_metrics["error_rate"] - 1 / 3) < 0.001
+        )  # Float comparison with tolerance
+        assert (
+            abs(adzuna_metrics["success_rate"] - 2 / 3) < 0.001
+        )  # Float comparison with tolerance
         assert adzuna_metrics["avg_response_time"] > 0
 
     @pytest.mark.asyncio
@@ -418,7 +459,7 @@ class TestPerformanceMonitor:
         monitor = PerformanceMonitor()
         monitor.health_checker = create_health_checker_with_db(metrics_db)
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             result = await monitor.get_health_summary()
 
             assert "overall_status" in result
@@ -432,9 +473,11 @@ class TestPerformanceMonitor:
             # Should be healthy with mocked successful responses
             assert result["overall_status"] in ["healthy", "degraded"]
 
+
 # =============================================================================
 # Backup Manager Tests
 # =============================================================================
+
 
 class TestBackupManager:
     """Test backup functionality."""
@@ -454,7 +497,10 @@ class TestBackupManager:
 
         # Add some data to backup
         def add_data(conn):
-            conn.execute("INSERT INTO jobs (title, company) VALUES (?, ?)", ("Test Job", "Test Company"))
+            conn.execute(
+                "INSERT INTO jobs (title, company) VALUES (?, ?)",
+                ("Test Job", "Test Company"),
+            )
 
         safe_db_operation(main_db, add_data)
 
@@ -499,7 +545,9 @@ class TestBackupManager:
         backup_manager = BackupManager()
 
         # Create an old backup file
-        old_date = datetime.now() - timedelta(days=MonitoringConfig.BACKUP_RETENTION_DAYS + 1)
+        old_date = datetime.now() - timedelta(
+            days=MonitoringConfig.BACKUP_RETENTION_DAYS + 1
+        )
         old_backup = backup_manager.backup_dir / "old_backup.gz"
         old_backup.touch()
 
@@ -521,9 +569,11 @@ class TestBackupManager:
         with contextlib.suppress(PermissionError, FileNotFoundError):
             recent_backup.unlink()
 
+
 # =============================================================================
 # Monitoring Service Tests
 # =============================================================================
+
 
 class TestMonitoringService:
     """Test main monitoring service."""
@@ -550,11 +600,16 @@ class TestMonitoringService:
         service.health_checker = create_health_checker_with_db(metrics_db)
         service.performance_monitor.health_checker = service.health_checker
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             result = await service.run_health_checks()
 
             assert "overall_status" in result
-            assert result["overall_status"] in ["healthy", "degraded", "unhealthy", "error"]
+            assert result["overall_status"] in [
+                "healthy",
+                "degraded",
+                "unhealthy",
+                "error",
+            ]
 
     @pytest.mark.asyncio
     async def test_run_maintenance(self, temp_databases):
@@ -565,13 +620,18 @@ class TestMonitoringService:
         service.health_checker = create_health_checker_with_db(metrics_db)
 
         # Add some old metrics data
-        old_date = datetime.now() - timedelta(days=MonitoringConfig.METRICS_RETENTION_DAYS + 1)
+        old_date = datetime.now() - timedelta(
+            days=MonitoringConfig.METRICS_RETENTION_DAYS + 1
+        )
 
         def add_old_data(conn):
-            conn.execute('''
+            conn.execute(
+                """
                 INSERT INTO health_checks (timestamp, check_type, status, response_time, details)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (old_date, "test", "healthy", 1.0, "test"))
+            """,
+                (old_date, "test", "healthy", 1.0, "test"),
+            )
 
         safe_db_operation(metrics_db, add_old_data)
 
@@ -594,17 +654,22 @@ class TestMonitoringService:
         service.health_checker = create_health_checker_with_db(metrics_db)
 
         # Add old and recent metrics
-        old_date = datetime.now() - timedelta(days=MonitoringConfig.METRICS_RETENTION_DAYS + 1)
+        old_date = datetime.now() - timedelta(
+            days=MonitoringConfig.METRICS_RETENTION_DAYS + 1
+        )
         recent_date = datetime.now()
 
         def add_test_data(conn):
-            conn.executemany('''
+            conn.executemany(
+                """
                 INSERT INTO health_checks (timestamp, check_type, status, response_time, details)
                 VALUES (?, ?, ?, ?, ?)
-            ''', [
-                (old_date, "test", "healthy", 1.0, "old"),
-                (recent_date, "test", "healthy", 1.0, "recent")
-            ])
+            """,
+                [
+                    (old_date, "test", "healthy", 1.0, "old"),
+                    (recent_date, "test", "healthy", 1.0, "recent"),
+                ],
+            )
 
         safe_db_operation(metrics_db, add_test_data)
 
@@ -621,9 +686,11 @@ class TestMonitoringService:
         assert len(results) == 1
         assert results[0][0] == "recent"
 
+
 # =============================================================================
 # CLI Command Tests
 # =============================================================================
+
 
 class TestCLICommands:
     """Test CLI command functionality."""
@@ -642,30 +709,26 @@ class TestCLICommands:
                 "status": "healthy",
                 "response_time": 0.5,
                 "job_count": 10,
-                "application_count": 5
+                "application_count": 5,
             },
-            "apis": {
-                "apis": {
-                    "adzuna": {
-                        "status": "healthy",
-                        "response_time": 1.2
-                    }
-                }
-            },
+            "apis": {"apis": {"adzuna": {"status": "healthy", "response_time": 1.2}}},
             "performance": {
                 "adzuna": {
                     "request_count": 15,
                     "avg_response_time": 1.5,
-                    "success_rate": 0.95
+                    "success_rate": 0.95,
                 }
-            }
+            },
         }
 
-        with patch('scripts.monitor.MonitoringService') as mock_service_class:
+        with patch("scripts.monitor.MonitoringService") as mock_service_class:
             mock_instance = mock_service_class.return_value
-            mock_instance.run_health_checks = AsyncMock(return_value=mock_health_summary)
+            mock_instance.run_health_checks = AsyncMock(
+                return_value=mock_health_summary
+            )
 
             from scripts.monitor import status_command
+
             await status_command()
 
             captured = capsys.readouterr()
@@ -680,13 +743,16 @@ class TestCLICommands:
         main_db, metrics_db = temp_databases
 
         from scripts.monitor import backup_command
+
         await backup_command()
 
         captured = capsys.readouterr()
         assert "Creating database backup" in captured.out
         # Should show either success or failure message
-        assert ("Backup created successfully" in captured.out or
-                "Backup failed" in captured.out)
+        assert (
+            "Backup created successfully" in captured.out
+            or "Backup failed" in captured.out
+        )
 
     @pytest.mark.asyncio
     async def test_maintenance_command(self, temp_databases, capsys):
@@ -694,15 +760,18 @@ class TestCLICommands:
         main_db, metrics_db = temp_databases
 
         from scripts.monitor import maintenance_command
+
         await maintenance_command()
 
         captured = capsys.readouterr()
         assert "Running maintenance tasks" in captured.out
         assert "Maintenance completed" in captured.out
 
+
 # =============================================================================
 # Configuration Tests
 # =============================================================================
+
 
 class TestConfiguration:
     """Test configuration handling."""
@@ -728,20 +797,26 @@ class TestConfiguration:
             assert config.ENABLE_EMAIL_ALERTS is False
 
         # Test with email alerts enabled
-        with patch.dict(os.environ, {
-            "ENABLE_EMAIL_ALERTS": "true",
-            "EMAIL_USER": "test@example.com",
-            "EMAIL_PASS": "password",
-            "ALERT_EMAIL": "alerts@example.com"
-        }, clear=False):
+        with patch.dict(
+            os.environ,
+            {
+                "ENABLE_EMAIL_ALERTS": "true",
+                "EMAIL_USER": "test@example.com",
+                "EMAIL_PASS": "password",
+                "ALERT_EMAIL": "alerts@example.com",
+            },
+            clear=False,
+        ):
             config = MonitoringConfig()
             assert config.ENABLE_EMAIL_ALERTS is True
             assert config.EMAIL_USER == "test@example.com"
             assert config.ALERT_EMAIL == "alerts@example.com"
 
+
 # =============================================================================
 # Error Handling Tests
 # =============================================================================
+
 
 class TestErrorHandling:
     """Test error handling in monitoring system."""
@@ -755,8 +830,11 @@ class TestErrorHandling:
         service.health_checker = create_health_checker_with_db(metrics_db)
 
         # Mock the get_health_summary method to raise an exception
-        with patch.object(service.performance_monitor, 'get_health_summary',
-                        side_effect=Exception("Test error")) as mock_health:
+        with patch.object(
+            service.performance_monitor,
+            "get_health_summary",
+            side_effect=Exception("Test error"),
+        ) as mock_health:
             result = await service.run_health_checks()
 
             assert "overall_status" in result
@@ -771,14 +849,16 @@ class TestErrorHandling:
         backup_manager = BackupManager()
 
         # Mock the SQLite backup method to raise permission error
-        with patch('sqlite3.connect') as mock_connect:
+        with patch("sqlite3.connect") as mock_connect:
             mock_source = Mock()
             mock_backup = Mock()
             mock_source.backup.side_effect = PermissionError("Permission denied")
             mock_connect.side_effect = [mock_source, mock_backup]
 
             # Also mock the fallback file copy
-            with patch('shutil.copy2', side_effect=PermissionError("Permission denied")):
+            with patch(
+                "shutil.copy2", side_effect=PermissionError("Permission denied")
+            ):
                 result = backup_manager.backup_database()
 
                 assert result is False
@@ -796,15 +876,17 @@ class TestErrorHandling:
         mock_client.__aexit__.return_value = None
         mock_client.get.side_effect = Exception("Network error")
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             result = await health_checker.check_adzuna_api()
 
             assert result["status"] == "unhealthy"
             assert "Network error" in result["details"]
 
+
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestMonitoringIntegration:
     """Test monitoring system integration."""
@@ -818,7 +900,7 @@ class TestMonitoringIntegration:
         service.health_checker = create_health_checker_with_db(metrics_db)
         service.performance_monitor.health_checker = service.health_checker
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             # Run health checks
             health_result = await service.run_health_checks()
             assert "overall_status" in health_result
@@ -835,6 +917,7 @@ class TestMonitoringIntegration:
             health_count = safe_db_operation(metrics_db, check_metrics)
             assert health_count >= 0  # Should have some health check logs
 
+
 # =============================================================================
 # Test Runner
 # =============================================================================
@@ -842,9 +925,11 @@ class TestMonitoringIntegration:
 if __name__ == "__main__":
     import pytest
 
-    pytest.main([
-        __file__,
-        "-v",
-        "--tb=short",
-        "--durations=10",
-    ])
+    pytest.main(
+        [
+            __file__,
+            "-v",
+            "--tb=short",
+            "--durations=10",
+        ]
+    )

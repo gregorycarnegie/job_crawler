@@ -24,16 +24,13 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+
 def run_command(command, description, capture_output=False):
     """Run a command with error handling."""
     print(f"🔧 {description}...")
     try:
         result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            capture_output=capture_output,
-            text=True
+            command, shell=True, check=True, capture_output=capture_output, text=True
         )
         if capture_output:
             return result.stdout, result.stderr
@@ -45,6 +42,7 @@ def run_command(command, description, capture_output=False):
             print(f"STDOUT: {e.stdout}")
             print(f"STDERR: {e.stderr}")
         return False
+
 
 def check_dependencies():
     """Check if required dependencies are installed - UPDATED VERSION."""
@@ -65,7 +63,7 @@ def check_dependencies():
 
     optional_packages = [
         "pytest-cov",  # For coverage reporting
-        "psutil",      # For system monitoring
+        "psutil",  # For system monitoring
     ]
 
     missing_required = []
@@ -96,6 +94,7 @@ def check_dependencies():
     print("✅ All required dependencies installed")
     return True
 
+
 def run_main_tests(verbose=False):
     """Run tests for main job agent - FIXED VERSION."""
     print("\n🧪 Running Main Agent Tests")
@@ -106,6 +105,7 @@ def run_main_tests(verbose=False):
     # CRITICAL FIX: Check if pytest-cov is available before adding coverage
     try:
         import pytest_cov
+
         test_command += " --cov=main --cov-report=term-missing"
         print("ℹ️  Running with coverage reporting")
     except ImportError:
@@ -114,6 +114,7 @@ def run_main_tests(verbose=False):
 
     return run_command(test_command, "Main agent tests")
 
+
 def run_monitor_tests(verbose=False):
     """Run tests for monitoring system."""
     print("\n🔍 Running Monitor Tests")
@@ -121,6 +122,7 @@ def run_monitor_tests(verbose=False):
 
     test_command = "pytest tests/test_monitoring.py" + (" -v" if verbose else " -q")
     return run_command(test_command, "Monitor system tests")
+
 
 def run_integration_tests(verbose=False):
     """Run integration tests."""
@@ -132,6 +134,7 @@ def run_integration_tests(verbose=False):
     )
     return run_command(test_command, "Integration tests")
 
+
 def run_quick_tests(verbose=False):
     """Run quick smoke tests."""
     print("\n⚡ Running Quick Tests")
@@ -140,16 +143,15 @@ def run_quick_tests(verbose=False):
     # Test database functionality
     quick_tests = [
         "pytest tests/test_main.py::TestDatabase -q",
-        "pytest tests/test_main.py::TestJobAnalysis -q", 
-        "pytest tests/test_monitoring.py::TestHealthChecker::test_health_checker_initialization -q"
+        "pytest tests/test_main.py::TestJobAnalysis -q",
+        "pytest tests/test_monitoring.py::TestHealthChecker::test_health_checker_initialization -q",
     ]
 
     return all(
-        run_command(
-            test_command, f"Quick test: {test_command.split('::')[-1]}"
-        )
+        run_command(test_command, f"Quick test: {test_command.split('::')[-1]}")
         for test_command in quick_tests
     )
+
 
 def run_performance_tests(verbose=False):
     """Run performance tests."""
@@ -161,6 +163,7 @@ def run_performance_tests(verbose=False):
     )
     return run_command(test_command, "Performance tests")
 
+
 def validate_configuration():
     """Validate configuration files."""
     print("\n⚙️ Validating Configuration")
@@ -170,13 +173,11 @@ def validate_configuration():
     required_files = [
         "src/claude_job_agent/main.py",
         "scripts/monitor.py",
-        "pyproject.toml"
+        "pyproject.toml",
     ]
 
     missing_files = []
-    missing_files.extend(
-        file for file in required_files if not Path(file).exists()
-    )
+    missing_files.extend(file for file in required_files if not Path(file).exists())
     if missing_files:
         print(f"❌ Missing files: {', '.join(missing_files)}")
         return False
@@ -185,15 +186,14 @@ def validate_configuration():
     required_env = ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"]
     missing_env = []
 
-    missing_env.extend(
-        env_var for env_var in required_env if not os.getenv(env_var)
-    )
+    missing_env.extend(env_var for env_var in required_env if not os.getenv(env_var))
     if missing_env:
         print(f"⚠️  Missing environment variables: {', '.join(missing_env)}")
         print("Set these in your Claude Desktop config or .env file")
 
     print("✅ Configuration validated")
     return True
+
 
 def run_syntax_checks():
     """Run syntax and style checks."""
@@ -207,7 +207,7 @@ def run_syntax_checks():
         result = subprocess.run(
             ["python", "-m", "py_compile", "src/claude_job_agent/main.py"],
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             print("✅ main.py syntax check passed")
@@ -225,7 +225,7 @@ def run_syntax_checks():
         result = subprocess.run(
             ["python", "-m", "py_compile", "scripts/monitor.py"],
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             print("✅ monitor.py syntax check passed")
@@ -241,9 +241,15 @@ def run_syntax_checks():
     # Optional: Run black formatting check
     try:
         result = subprocess.run(
-            ["black", "--check", "--diff", "src/claude_job_agent/main.py", "scripts/monitor.py"],
+            [
+                "black",
+                "--check",
+                "--diff",
+                "src/claude_job_agent/main.py",
+                "scripts/monitor.py",
+            ],
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             print("✅ Code formatting check passed")
@@ -262,6 +268,7 @@ def _extracted_from_run_syntax_checks_19(arg0, result, checks):
     print(arg0)
     print(result.stderr)
     checks.append(False)
+
 
 def test_api_connectivity():
     """Test API connectivity with real endpoints."""
@@ -304,6 +311,7 @@ def test_api_connectivity():
         print(f"❌ API test setup failed: {e}")
         return False
 
+
 def create_test_database():
     """Create test database to verify database functionality - FIXED."""
     print("\n🗄️ Testing Database Functionality")
@@ -330,15 +338,21 @@ def create_test_database():
                 cursor = conn.cursor()
 
                 # Insert test data
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT INTO jobs (title, company, location, url)
                     VALUES (?, ?, ?, ?)
-                ''', ("Test Job", "Test Company", "London", "http://test.com"))
+                """,
+                    ("Test Job", "Test Company", "London", "http://test.com"),
+                )
 
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT INTO applications (job_id, status, applied_date)
                     VALUES (?, ?, ?)
-                ''', (1, "applied", "2024-01-15"))
+                """,
+                    (1, "applied", "2024-01-15"),
+                )
 
                 conn.commit()
 
@@ -375,6 +389,7 @@ def create_test_database():
         print(f"❌ Database test failed: {e}")
         return False
 
+
 def run_mcp_validation():
     """Validate MCP server functionality."""
     print("\n🔌 Validating MCP Server")
@@ -389,7 +404,7 @@ def run_mcp_validation():
 
         # Get tool names (this depends on FastMCP implementation)
         # For now, just check if mcp object exists
-        if hasattr(mcp, '_tools') or hasattr(mcp, 'tools'):
+        if hasattr(mcp, "_tools") or hasattr(mcp, "tools"):
             print("✅ MCP server tools registered")
         else:
             print("⚠️  MCP server structure may have changed")
@@ -401,14 +416,14 @@ def run_mcp_validation():
         print(f"❌ MCP validation failed: {e}")
         return False
 
+
 def generate_test_report(results):
     """Generate a comprehensive test report."""
     print("\n📊 Test Report")
     print("=" * 50)
 
     total_tests = len(results)
-    passed_tests = sum(bool(result)
-                   for result in results.values())
+    passed_tests = sum(bool(result) for result in results.values())
     failed_tests = total_tests - passed_tests
 
     print(f"Total Tests: {total_tests}")
@@ -425,18 +440,27 @@ def generate_test_report(results):
         print("\n🎉 All tests passed! Your Claude Job Agent is ready to deploy.")
         return True
     else:
-        print(f"\n⚠️  {failed_tests} test(s) failed. Please review and fix issues before deployment.")
+        print(
+            f"\n⚠️  {failed_tests} test(s) failed. Please review and fix issues before deployment."
+        )
         return False
+
 
 def main():
     """Main test runner."""
     parser = argparse.ArgumentParser(description="Test Runner for Claude Job Agent")
     parser.add_argument("--quick", action="store_true", help="Run quick tests only")
     parser.add_argument("--main", action="store_true", help="Test main agent only")
-    parser.add_argument("--monitor", action="store_true", help="Test monitoring system only")
+    parser.add_argument(
+        "--monitor", action="store_true", help="Test monitoring system only"
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
-    parser.add_argument("--no-api", action="store_true", help="Skip API connectivity tests")
-    parser.add_argument("--no-integration", action="store_true", help="Skip integration tests")
+    parser.add_argument(
+        "--no-api", action="store_true", help="Skip API connectivity tests"
+    )
+    parser.add_argument(
+        "--no-integration", action="store_true", help="Skip integration tests"
+    )
 
     args = parser.parse_args()
 
@@ -444,8 +468,11 @@ def main():
     print("=" * 50)
 
     # Test results tracking
-    results = {"Dependencies": check_dependencies(), "Configuration": validate_configuration(),
-               "Syntax Checks": run_syntax_checks()}
+    results = {
+        "Dependencies": check_dependencies(),
+        "Configuration": validate_configuration(),
+        "Syntax Checks": run_syntax_checks(),
+    }
 
     if not all([results["Dependencies"], results["Configuration"]]):
         print("\n❌ Pre-flight checks failed. Cannot continue with tests.")
@@ -483,6 +510,7 @@ def _extracted_from_main_36(results, args):
     if not args.no_integration:
         results["Integration Tests"] = run_integration_tests(args.verbose)
         results["Performance Tests"] = run_performance_tests(args.verbose)
+
 
 if __name__ == "__main__":
     main()

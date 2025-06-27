@@ -34,7 +34,7 @@ class PerformanceMonitor:
             memory_available = memory.available / (1024**3)  # GB
 
             # Disk usage
-            disk = psutil.disk_usage('.')
+            disk = psutil.disk_usage(".")
             disk_percent = disk.percent
             disk_free = disk.free / (1024**3)  # GB
 
@@ -49,7 +49,7 @@ class PerformanceMonitor:
                 "memory_available_gb": memory_available,
                 "disk_percent": disk_percent,
                 "disk_free_gb": disk_free,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
@@ -62,14 +62,16 @@ class PerformanceMonitor:
             cursor = conn.cursor()
 
             # Average response times by API
-            cursor.execute('''
+            cursor.execute(
+                """
                 SELECT api_name, AVG(response_time) as avg_response_time,
                        COUNT(*) as request_count,
                        SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) as error_count
                 FROM api_metrics
                 WHERE timestamp > datetime('now', '-1 hour')
                 GROUP BY api_name
-            ''')
+            """
+            )
 
             api_performance = {}
             for row in cursor.fetchall():
@@ -81,7 +83,7 @@ class PerformanceMonitor:
                     "request_count": request_count,
                     "error_count": error_count,
                     "error_rate": error_rate,
-                    "success_rate": 1 - error_rate
+                    "success_rate": 1 - error_rate,
                 }
 
             return api_performance
@@ -101,7 +103,9 @@ class PerformanceMonitor:
         if api_health["status"] not in ["healthy", "degraded"]:
             issues.append("External API failures")
 
-        overall_status = "healthy" if not issues else "degraded" if len(issues) == 1 else "unhealthy"
+        overall_status = (
+            "healthy" if not issues else "degraded" if len(issues) == 1 else "unhealthy"
+        )
 
         return {
             "overall_status": overall_status,
@@ -110,5 +114,5 @@ class PerformanceMonitor:
             "database": db_health,
             "apis": api_health,
             "system": system_metrics,
-            "performance": api_performance
+            "performance": api_performance,
         }

@@ -33,6 +33,7 @@ from src.claude_job_agent.monitoring.monitoring_service import MonitoringService
 # Logging Setup
 # =============================================================================
 
+
 def setup_logging():
     """Configure comprehensive logging."""
     log_dir = Path("logs")
@@ -40,7 +41,7 @@ def setup_logging():
 
     # Create formatters
     detailed_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     # Main application logger
@@ -73,9 +74,11 @@ def setup_logging():
 
     return app_logger, error_logger, perf_logger, api_logger
 
+
 # =============================================================================
 # CLI Commands
 # =============================================================================
+
 
 async def status_command():
     """Show current system status."""
@@ -87,31 +90,34 @@ async def status_command():
     print(f"Overall Status: {health_summary['overall_status'].upper()}")
     print(f"Timestamp: {health_summary['timestamp']}")
 
-    if health_summary.get('issues'):
+    if health_summary.get("issues"):
         print("\n⚠️  Issues:")
-        for issue in health_summary['issues']:
+        for issue in health_summary["issues"]:
             print(f"  - {issue}")
 
     print("\n📊 Database:")
-    db = health_summary.get('database', {})
+    db = health_summary.get("database", {})
     print(f"  Status: {db.get('status', 'unknown')}")
     print(f"  Response Time: {db.get('response_time', 0):.2f}s")
     print(f"  Jobs: {db.get('job_count', 0)}")
     print(f"  Applications: {db.get('application_count', 0)}")
 
     print("\n🌐 APIs:")
-    apis = health_summary.get('apis', {}).get('apis', {})
+    apis = health_summary.get("apis", {}).get("apis", {})
     for api_name, api_status in apis.items():
-        status_icon = "✅" if api_status['status'] == 'healthy' else "❌"
-        print(f"  {status_icon} {api_name}: {api_status['status']} ({api_status.get('response_time', 0):.2f}s)")
+        status_icon = "✅" if api_status["status"] == "healthy" else "❌"
+        print(
+            f"  {status_icon} {api_name}: {api_status['status']} ({api_status.get('response_time', 0):.2f}s)"
+        )
 
-    if performance := health_summary.get('performance', {}):
+    if performance := health_summary.get("performance", {}):
         print("\n📈 Performance (last hour):")
         for api_name, metrics in performance.items():
             print(f"  {api_name}:")
             print(f"    Requests: {metrics.get('request_count', 0)}")
             print(f"    Avg Response: {metrics.get('avg_response_time', 0):.2f}s")
             print(f"    Success Rate: {metrics.get('success_rate', 0):.1%}")
+
 
 async def monitor_command():
     """Start monitoring service."""
@@ -130,6 +136,7 @@ async def monitor_command():
     finally:
         monitor.stop()
 
+
 async def backup_command():
     """Create database backup."""
     print("💾 Creating database backup...")
@@ -140,6 +147,7 @@ async def backup_command():
     else:
         print("❌ Backup failed")
 
+
 async def maintenance_command():
     """Run maintenance tasks."""
     print("🔧 Running maintenance tasks...")
@@ -147,36 +155,38 @@ async def maintenance_command():
     await monitor.run_maintenance()
     print("✅ Maintenance completed")
 
+
 def main():
     """Main CLI entry point."""
 
     parser = argparse.ArgumentParser(description="Claude Job Agent Operations")
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Status command
-    subparsers.add_parser('status', help='Show system status')
+    subparsers.add_parser("status", help="Show system status")
 
     # Monitor command
-    subparsers.add_parser('monitor', help='Start monitoring service')
+    subparsers.add_parser("monitor", help="Start monitoring service")
 
     # Backup command
-    subparsers.add_parser('backup', help='Create database backup')
+    subparsers.add_parser("backup", help="Create database backup")
 
     # Maintenance command
-    subparsers.add_parser('maintenance', help='Run maintenance tasks')
+    subparsers.add_parser("maintenance", help="Run maintenance tasks")
 
     args = parser.parse_args()
 
-    if args.command == 'status':
+    if args.command == "status":
         asyncio.run(status_command())
-    elif args.command == 'monitor':
+    elif args.command == "monitor":
         asyncio.run(monitor_command())
-    elif args.command == 'backup':
+    elif args.command == "backup":
         asyncio.run(backup_command())
-    elif args.command == 'maintenance':
+    elif args.command == "maintenance":
         asyncio.run(maintenance_command())
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

@@ -23,13 +23,13 @@ class JSONFormatter(logging.Formatter):
             log_entry["exception"] = self.formatException(record.exc_info)
 
         # Add extra fields
-        if hasattr(record, 'user_id'):
+        if hasattr(record, "user_id"):
             log_entry["user_id"] = record.user_id
-        if hasattr(record, 'request_id'):
+        if hasattr(record, "request_id"):
             log_entry["request_id"] = record.request_id
-        if hasattr(record, 'api_name'):
+        if hasattr(record, "api_name"):
             log_entry["api_name"] = record.api_name
-        if hasattr(record, 'response_time'):
+        if hasattr(record, "response_time"):
             log_entry["response_time"] = record.response_time
 
         return json.dumps(log_entry)

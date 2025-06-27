@@ -11,8 +11,6 @@ Run with:
     pytest test_main.py -k "test_search" -v  # Run tests matching pattern
 """
 
-
-
 import asyncio
 import os
 import sqlite3
@@ -42,6 +40,7 @@ from src.claude_job_agent.main import (
 # Test Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_adzuna_response():
     """Sample Adzuna API response for testing."""
@@ -57,7 +56,7 @@ def sample_adzuna_response():
                 "redirect_url": "https://example.com/job/123",
                 "description": "We are looking for a Senior Python Developer with expertise in Django, PostgreSQL, and AWS. Must have 5+ years experience in web development.",
                 "created": "2024-01-15T10:00:00Z",
-                "category": {"label": "IT Jobs"}
+                "category": {"label": "IT Jobs"},
             },
             {
                 "title": "Full Stack Engineer",
@@ -69,10 +68,11 @@ def sample_adzuna_response():
                 "redirect_url": "https://example.com/job/456",
                 "description": "Join our growing team as a Full Stack Engineer. Experience with React, Node.js, and MongoDB required. Remote-friendly culture.",
                 "created": "2024-01-14T14:30:00Z",
-                "category": {"label": "IT Jobs"}
-            }
+                "category": {"label": "IT Jobs"},
+            },
         ]
     }
+
 
 @pytest.fixture
 def sample_user_profile():
@@ -83,7 +83,7 @@ def sample_user_profile():
             {"name": "JavaScript", "level": "intermediate", "years": 3},
             {"name": "SQL", "level": "advanced", "years": 4},
             {"name": "Django", "level": "advanced", "years": 4},
-            {"name": "React", "level": "intermediate", "years": 2}
+            {"name": "React", "level": "intermediate", "years": 2},
         ],
         experience_years=5,
         current_role="Software Developer",
@@ -92,8 +92,9 @@ def sample_user_profile():
         location_preference="London",
         remote_preference="hybrid",
         industry_preferences=["Technology", "Fintech"],
-        company_size_preference="scaleup"
+        company_size_preference="scaleup",
     )
+
 
 @pytest.fixture
 def temp_database():
@@ -146,6 +147,7 @@ def temp_database():
                 else:
                     print(f"Warning: Could not delete test database {db_path}")
 
+
 @pytest.fixture
 def mock_httpx_client():
     """Mock httpx client for API calls."""
@@ -158,9 +160,11 @@ def mock_httpx_client():
     mock_client.__aexit__.return_value = None
     return mock_client
 
+
 # =============================================================================
 # Database Tests
 # =============================================================================
+
 
 class TestDatabase:
     """Test database functionality."""
@@ -180,10 +184,21 @@ class TestDatabase:
         """Test inserting job data into database."""
         with sqlite3.connect(temp_database.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO jobs (title, company, location, url, description, salary_min, salary_max)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', ("Python Developer", "TechCorp", "London", "http://example.com", "Great job", 70000, 90000))
+            """,
+                (
+                    "Python Developer",
+                    "TechCorp",
+                    "London",
+                    "http://example.com",
+                    "Great job",
+                    70000,
+                    90000,
+                ),
+            )
             conn.commit()
 
             cursor.execute("SELECT * FROM jobs WHERE title = ?", ("Python Developer",))
@@ -191,22 +206,26 @@ class TestDatabase:
 
             assert job is not None
             assert job[1] == "Python Developer"  # title
-            assert job[2] == "TechCorp"          # company
-            assert job[6] == 70000               # salary_min
+            assert job[2] == "TechCorp"  # company
+            assert job[6] == 70000  # salary_min
+
 
 # =============================================================================
 # Job Search Tests
 # =============================================================================
 
+
 class TestJobSearch:
     """Test job search functionality."""
 
     @pytest.mark.asyncio
-    async def test_adzuna_search_success(self, sample_adzuna_response, mock_httpx_client):
+    async def test_adzuna_search_success(
+        self, sample_adzuna_response, mock_httpx_client
+    ):
         """Test successful Adzuna API search."""
         mock_httpx_client.get.return_value.json.return_value = sample_adzuna_response
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             results = await search_adzuna_jobs("python developer", max_results=10)
 
             assert len(results) == 2
@@ -220,7 +239,7 @@ class TestJobSearch:
         """Test Adzuna API search failure handling."""
         mock_httpx_client.get.side_effect = Exception("API Error")
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             results = await search_adzuna_jobs("python developer")
 
             assert results == []
@@ -248,9 +267,11 @@ class TestJobSearch:
             if original_key:
                 os.environ["ADZUNA_APP_KEY"] = original_key
 
+
 # =============================================================================
 # Job Analysis Tests
 # =============================================================================
+
 
 class TestJobAnalysis:
     """Test job analysis and feature extraction."""
@@ -261,7 +282,7 @@ class TestJobAnalysis:
             "title": "Senior Python Developer",
             "description": "Looking for a senior python developer with 5+ years experience. Must know Django, PostgreSQL, AWS, Docker. Remote work available. Competitive salary and health insurance.",
             "salary_min": 70000,
-            "salary_max": 90000
+            "salary_max": 90000,
         }
 
         features = extract_basic_job_features(job)
@@ -282,7 +303,7 @@ class TestJobAnalysis:
         job = {
             "title": "Python Developer",
             "company": "TechCorp",
-            "description": "We need a Python developer with Django experience."
+            "description": "We need a Python developer with Django experience.",
         }
 
         framework = create_analysis_framework(job)
@@ -295,26 +316,30 @@ class TestJobAnalysis:
         assert "application_strategy" in framework.analysis_prompts
         assert "technical_skills" in framework.scoring_criteria
 
+
 # =============================================================================
 # MCP Tools Tests
 # =============================================================================
+
 
 class TestMCPTools:
     """Test MCP tool endpoints."""
 
     @pytest.mark.asyncio
-    async def test_search_jobs_with_analysis_framework(self, sample_adzuna_response, mock_httpx_client, temp_database):
+    async def test_search_jobs_with_analysis_framework(
+        self, sample_adzuna_response, mock_httpx_client, temp_database
+    ):
         """Test the main job search tool."""
         mock_httpx_client.get.return_value.json.return_value = sample_adzuna_response
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             from src.claude_job_agent.main import search_jobs_with_analysis_framework
 
             results = await search_jobs_with_analysis_framework(
                 query="python developer",
                 location="London",
                 max_results=10,
-                include_analysis_framework=True
+                include_analysis_framework=True,
             )
 
             assert len(results) > 0
@@ -337,7 +362,7 @@ class TestMCPTools:
             user_skills=["Python", "JavaScript", "SQL"],
             experience_years=5,
             salary_expectation=80000,
-            remote_preference="hybrid"
+            remote_preference="hybrid",
         )
 
         assert "user_profile" in result
@@ -365,7 +390,7 @@ class TestMCPTools:
             job_title="Senior Python Developer",
             company_name="TechCorp",
             job_description="Looking for a senior Python developer with Django experience. Health insurance and flexible hours provided.",
-            user_background="5 years Python development experience"
+            user_background="5 years Python development experience",
         )
 
         assert "cv_optimization" in result
@@ -396,7 +421,7 @@ class TestMCPTools:
             position="Python Developer",
             application_date="2024-01-15",
             status="applied",
-            notes="Applied through company website"
+            notes="Applied through company website",
         )
 
         assert "application_id" in result
@@ -433,20 +458,24 @@ class TestMCPTools:
         # Add some test data to database
         with sqlite3.connect(temp_database.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO job_searches (query, results_count)
                 VALUES (?, ?)
-            ''', ("python developer", 15))
-            cursor.execute('''
+            """,
+                ("python developer", 15),
+            )
+            cursor.execute(
+                """
                 INSERT INTO jobs (title, company, location)
                 VALUES (?, ?, ?)
-            ''', ("Python Developer", "TechCorp", "London"))
+            """,
+                ("Python Developer", "TechCorp", "London"),
+            )
             conn.commit()
 
         result = await analyze_job_market_data(
-            location="London",
-            job_category="Technology",
-            timeframe_days=30
+            location="London", job_category="Technology", timeframe_days=30
         )
 
         assert "analysis_period" in result
@@ -471,7 +500,7 @@ class TestMCPTools:
             current_role="Software Developer",
             target_roles=["Senior Software Engineer", "Tech Lead"],
             current_skills=["Python", "JavaScript", "SQL"],
-            timeline_months=24
+            timeline_months=24,
         )
 
         assert "current_position" in result
@@ -519,26 +548,38 @@ class TestMCPTools:
             cursor = conn.cursor()
 
             # Add jobs
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO jobs (title, company, url)
                 VALUES (?, ?, ?)
-            ''', ("Python Developer", "TechCorp", "http://example.com/1"))
+            """,
+                ("Python Developer", "TechCorp", "http://example.com/1"),
+            )
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO jobs (title, company, url)
                 VALUES (?, ?, ?)
-            ''', ("Full Stack Engineer", "StartupXYZ", "http://example.com/2"))
+            """,
+                ("Full Stack Engineer", "StartupXYZ", "http://example.com/2"),
+            )
 
             # Add applications with recent dates
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO applications (job_id, status, applied_date, notes)
                 VALUES (?, ?, ?, ?)
-            ''', (1, "applied", recent_date1, "Applied via website"))
+            """,
+                (1, "applied", recent_date1, "Applied via website"),
+            )
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO applications (job_id, status, applied_date, notes)
                 VALUES (?, ?, ?, ?)
-            ''', (2, "interview_scheduled", recent_date2, "Phone interview scheduled"))
+            """,
+                (2, "interview_scheduled", recent_date2, "Phone interview scheduled"),
+            )
 
             conn.commit()
 
@@ -557,12 +598,16 @@ class TestMCPTools:
         result = await get_application_status_summary()
 
         # Debug: Show what the function returned
-        print(f"DEBUG: Function returned total_applications: {result['total_applications']}")
+        print(
+            f"DEBUG: Function returned total_applications: {result['total_applications']}"
+        )
         print(f"DEBUG: Status breakdown: {result['status_breakdown']}")
-        print(f"DEBUG: Recent applications count: {len(result.get('recent_applications', []))}")
+        print(
+            f"DEBUG: Recent applications count: {len(result.get('recent_applications', []))}"
+        )
 
         # Check if there's an error in the result
-        if 'error' in result:
+        if "error" in result:
             print(f"DEBUG: Function returned error: {result['error']}")
 
         # Basic structure assertions
@@ -579,19 +624,23 @@ class TestMCPTools:
         assert result["status_breakdown"]["interview_scheduled"] == 1
         assert len(result["recent_applications"]) == 2
 
+
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestIntegration:
     """Test end-to-end workflows."""
 
     @pytest.mark.asyncio
-    async def test_full_job_search_workflow(self, sample_adzuna_response, mock_httpx_client, temp_database):
+    async def test_full_job_search_workflow(
+        self, sample_adzuna_response, mock_httpx_client, temp_database
+    ):
         """Test complete job search to application tracking workflow."""
         mock_httpx_client.get.return_value.json.return_value = sample_adzuna_response
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             # Import tools
             from src.claude_job_agent.main import (
                 create_job_compatibility_template,
@@ -602,9 +651,7 @@ class TestIntegration:
 
             # Step 1: Search for jobs
             jobs = await search_jobs_with_analysis_framework(
-                query="python developer",
-                location="London",
-                max_results=5
+                query="python developer", location="London", max_results=5
             )
 
             assert len(jobs) > 0
@@ -614,7 +661,7 @@ class TestIntegration:
             template = await create_job_compatibility_template(
                 user_skills=["Python", "Django", "SQL"],
                 experience_years=5,
-                salary_expectation=80000
+                salary_expectation=80000,
             )
 
             assert "scoring_template" in template
@@ -624,7 +671,7 @@ class TestIntegration:
                 job_title=job["title"],
                 company_name=job["company"],
                 job_description=job["description"],
-                user_background="5 years Python development"
+                user_background="5 years Python development",
             )
 
             assert "cv_optimization" in application_materials
@@ -635,25 +682,29 @@ class TestIntegration:
                 job_url=job["url"],
                 company_name=job["company"],
                 position=job["title"],
-                application_date="2024-01-15"
+                application_date="2024-01-15",
             )
 
             assert "application_id" in tracking
             assert tracking["tracking_info"]["company"] == job["company"]
 
+
 # =============================================================================
 # Performance Tests
 # =============================================================================
+
 
 class TestPerformance:
     """Test performance characteristics."""
 
     @pytest.mark.asyncio
-    async def test_concurrent_job_searches(self, sample_adzuna_response, mock_httpx_client):
+    async def test_concurrent_job_searches(
+        self, sample_adzuna_response, mock_httpx_client
+    ):
         """Test multiple concurrent job searches."""
         mock_httpx_client.get.return_value.json.return_value = sample_adzuna_response
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             from src.claude_job_agent.main import search_jobs_with_analysis_framework
 
             # Run multiple searches concurrently
@@ -678,7 +729,7 @@ class TestPerformance:
             "title": "Senior Python Developer",
             "description": long_description,
             "salary_min": 70000,
-            "salary_max": 90000
+            "salary_max": 90000,
         }
 
         # Should not crash with large descriptions
@@ -689,9 +740,11 @@ class TestPerformance:
         assert framework is not None
         assert len(framework.job_description) <= 800  # Should be truncated
 
+
 # =============================================================================
 # Error Handling Tests
 # =============================================================================
+
 
 class TestErrorHandling:
     """Test error handling and edge cases."""
@@ -700,9 +753,9 @@ class TestErrorHandling:
         """Test handling of malformed job data."""
         invalid_jobs = [
             {"title": None, "company": "TechCorp"},  # Missing title
-            {"company": "StartupXYZ"},               # Missing title entirely
-            {},                                      # Empty job data
-            {"title": "", "description": ""},        # Empty strings
+            {"company": "StartupXYZ"},  # Missing title entirely
+            {},  # Empty job data
+            {"title": "", "description": ""},  # Empty strings
         ]
 
         # Should not crash when processing invalid data
@@ -717,7 +770,7 @@ class TestErrorHandling:
     async def test_database_connection_error(self):
         """Test handling of database connection issues."""
         # Try to use invalid database path
-        with patch('sqlite3.connect') as mock_connect:
+        with patch("sqlite3.connect") as mock_connect:
             mock_connect.side_effect = sqlite3.Error("Database connection failed")
 
             from src.claude_job_agent.main import track_job_application
@@ -728,7 +781,7 @@ class TestErrorHandling:
                     job_url="http://example.com",
                     company_name="TechCorp",
                     position="Developer",
-                    application_date="2024-01-15"
+                    application_date="2024-01-15",
                 )
                 # Should still return a result even if database fails
                 assert isinstance(result, dict)
@@ -740,17 +793,20 @@ class TestErrorHandling:
     async def test_api_timeout_handling(self, mock_httpx_client):
         """Test handling of API timeouts."""
         import asyncio
+
         mock_httpx_client.get.side_effect = asyncio.TimeoutError("Request timed out")
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             results = await search_adzuna_jobs("python developer")
 
             # Should return empty list on timeout, not crash
             assert results == []
 
+
 # =============================================================================
 # Test Configuration
 # =============================================================================
+
 
 class TestConfiguration:
     """Test configuration and environment handling."""
@@ -780,6 +836,7 @@ class TestConfiguration:
                 os.environ.clear()
                 os.environ.update(original_env)
 
+
 # =============================================================================
 # Test Runner
 # =============================================================================
@@ -789,10 +846,12 @@ if __name__ == "__main__":
     import pytest
 
     # Configure pytest for this file
-    pytest.main([
-        __file__,
-        "-v",                    # Verbose output
-        "--tb=short",           # Short traceback format
-        "--durations=10",       # Show 10 slowest tests
-        "-x",                   # Stop on first failure
-    ])
+    pytest.main(
+        [
+            __file__,
+            "-v",  # Verbose output
+            "--tb=short",  # Short traceback format
+            "--durations=10",  # Show 10 slowest tests
+            "-x",  # Stop on first failure
+        ]
+    )

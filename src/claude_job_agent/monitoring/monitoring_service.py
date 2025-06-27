@@ -29,7 +29,9 @@ class MonitoringService:
             health_summary = await self.performance_monitor.get_health_summary()
 
             # Log health status
-            self.logger.info(f"Health check completed: {health_summary['overall_status']}")
+            self.logger.info(
+                f"Health check completed: {health_summary['overall_status']}"
+            )
 
             return health_summary
 
@@ -80,7 +82,9 @@ class MonitoringService:
     def cleanup_old_metrics(self):
         """Remove old metric data."""
         try:
-            cutoff_date = datetime.now() - timedelta(days=MonitoringConfig.METRICS_RETENTION_DAYS)
+            cutoff_date = datetime.now() - timedelta(
+                days=MonitoringConfig.METRICS_RETENTION_DAYS
+            )
 
             with sqlite3.connect(self.health_checker.metrics_db) as conn:
                 self._extracted_from_cleanup_old_metrics_7(conn, cutoff_date)
@@ -94,10 +98,14 @@ class MonitoringService:
     def _extracted_from_cleanup_old_metrics_7(conn, cutoff_date):
         conn.execute("DELETE FROM health_checks WHERE timestamp < ?", (cutoff_date,))
         conn.execute("DELETE FROM api_metrics WHERE timestamp < ?", (cutoff_date,))
-        conn.execute("DELETE FROM performance_metrics WHERE timestamp < ?", (cutoff_date,))
+        conn.execute(
+            "DELETE FROM performance_metrics WHERE timestamp < ?", (cutoff_date,)
+        )
 
         # Keep error logs for longer
-        error_cutoff = datetime.now() - timedelta(days=MonitoringConfig.METRICS_RETENTION_DAYS * 2)
+        error_cutoff = datetime.now() - timedelta(
+            days=MonitoringConfig.METRICS_RETENTION_DAYS * 2
+        )
         conn.execute("DELETE FROM error_logs WHERE timestamp < ?", (error_cutoff,))
 
         conn.commit()
@@ -109,13 +117,15 @@ class MonitoringService:
             if not log_dir.exists():
                 return
 
-            cutoff_date = datetime.now() - timedelta(days=MonitoringConfig.LOG_RETENTION_DAYS)
+            cutoff_date = datetime.now() - timedelta(
+                days=MonitoringConfig.LOG_RETENTION_DAYS
+            )
 
             for log_file in log_dir.glob("*.log"):
                 if log_file.stat().st_mtime < cutoff_date.timestamp():
                     # Compress old log file
-                    with open(log_file, 'rb') as f_in:
-                        with gzip.open(f"{log_file}.gz", 'wb') as f_out:
+                    with open(log_file, "rb") as f_in:
+                        with gzip.open(f"{log_file}.gz", "wb") as f_out:
                             f_in.seek(0)
                             f_out.write(f_in.read())
 

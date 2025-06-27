@@ -37,15 +37,16 @@ from claude_job_agent.core.logging_config import get_logger, setup_logging
 # Initialize logging at module level
 setup_logging()
 # logger = get_logger('main')
-startup_logger = get_logger('startup')
-api_logger = get_logger('api')
-search_logger = get_logger('search')
-app_logger = get_logger('applications')
-main_logger = get_logger('main')
+startup_logger = get_logger("startup")
+api_logger = get_logger("api")
+search_logger = get_logger("search")
+app_logger = get_logger("applications")
+main_logger = get_logger("main")
 
 # Try to import MCP with proper error handling
 try:
     from mcp.server.fastmcp import FastMCP
+
     startup_logger.info("Successfully imported FastMCP framework")
 except ImportError as e:
     startup_logger.critical("Failed to import MCP framework: %s", e)
@@ -59,6 +60,7 @@ load_dotenv()
 # Data Models (No AI API dependencies)
 # =============================================================================
 
+
 @dataclass
 class UserProfile:
     skills: list[dict[str, Any]]
@@ -71,14 +73,17 @@ class UserProfile:
     industry_preferences: list[str]
     company_size_preference: str
 
+
 @dataclass
 class JobAnalysisFramework:
     """Framework for Claude to analyse jobs consistently."""
+
     job_title: str
     job_description: str
     company: str
     analysis_prompts: dict[str, str]
     scoring_criteria: dict[str, list[str]]
+
 
 @dataclass
 class EnhancedJob:
@@ -100,9 +105,11 @@ class EnhancedJob:
     benefits_mentioned: list[str] | None = None
     tech_stack: list[str] | None = None
 
+
 # =============================================================================
 # Database Setup (Lightweight)
 # =============================================================================
+
 
 class JobDatabase:
     def __init__(self, db_path: str = None):
@@ -124,7 +131,8 @@ class JobDatabase:
         for attempt in range(max_retries):
             try:
                 with sqlite3.connect(self.db_path, timeout=30) as conn:
-                    conn.executescript('''
+                    conn.executescript(
+                        """
                         CREATE TABLE IF NOT EXISTS jobs (
                             id INTEGER PRIMARY KEY,
                             title TEXT,
@@ -162,7 +170,8 @@ class JobDatabase:
                             results_count INTEGER,
                             search_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         );
-                    ''')
+                    """
+                    )
                 break  # Success, exit retry loop
             except sqlite3.Error as e:
                 if attempt >= max_retries - 1:
@@ -172,17 +181,23 @@ class JobDatabase:
                 time.sleep(0.5)  # Wait before retry
                 continue
 
+
 # =============================================================================
 # Job Search Functions (No AI API calls)
 # =============================================================================
 
-async def search_adzuna_jobs(query: str, location: str = "London", max_results: int = 20) -> list[dict]:
+
+async def search_adzuna_jobs(
+    query: str, location: str = "London", max_results: int = 20
+) -> list[dict]:
     """Enhanced Adzuna search with better error handling."""
     app_id = os.getenv("ADZUNA_APP_ID")
     app_key = os.getenv("ADZUNA_APP_KEY")
 
     if not app_id or not app_key:
-        api_logger.warning("Adzuna API credentials not configured - check ADZUNA_APP_ID and ADZUNA_APP_KEY")
+        api_logger.warning(
+            "Adzuna API credentials not configured - check ADZUNA_APP_ID and ADZUNA_APP_KEY"
+        )
         return []
 
     endpoint = "https://api.adzuna.com/v1/api/jobs/gb/search/1"
@@ -213,9 +228,11 @@ async def search_adzuna_jobs(query: str, location: str = "London", max_results: 
                     "salary_max": item.get("salary_max"),
                     "contract_type": item.get("contract_type", ""),
                     "url": item.get("redirect_url", ""),
-                    "description": item.get("description", "")[:1000],  # Limit for Claude
+                    "description": item.get("description", "")[
+                        :1000
+                    ],  # Limit for Claude
                     "posted_date": item.get("created", ""),
-                    "category": item.get("category", {}).get("label", "")
+                    "category": item.get("category", {}).get("label", ""),
                 }
                 jobs.append(job)
 
@@ -225,6 +242,7 @@ async def search_adzuna_jobs(query: str, location: str = "London", max_results: 
         api_logger.error("Adzuna search failed unexpectedly: %s", e, exc_info=True)
         return []
 
+
 def extract_basic_job_features(job: dict) -> dict[str, Any]:
     """Extract structured features from job data for Claude analysis."""
     description = (job.get("description") or "").lower()
@@ -232,11 +250,43 @@ def extract_basic_job_features(job: dict) -> dict[str, Any]:
 
     # Common tech keywords
     tech_keywords = [
-        "python", "javascript", "java", "c++", "c#", "ruby", "php", "go", "rust",
-        "react", "vue", "angular", "node", "django", "flask", "spring", "laravel",
-        "aws", "azure", "gcp", "docker", "kubernetes", "terraform", "jenkins",
-        "sql", "postgresql", "mysql", "mongodb", "redis", "elasticsearch",
-        "git", "agile", "scrum", "devops", "ci/cd", "microservices", "api"
+        "python",
+        "javascript",
+        "java",
+        "c++",
+        "c#",
+        "ruby",
+        "php",
+        "go",
+        "rust",
+        "react",
+        "vue",
+        "angular",
+        "node",
+        "django",
+        "flask",
+        "spring",
+        "laravel",
+        "aws",
+        "azure",
+        "gcp",
+        "docker",
+        "kubernetes",
+        "terraform",
+        "jenkins",
+        "sql",
+        "postgresql",
+        "mysql",
+        "mongodb",
+        "redis",
+        "elasticsearch",
+        "git",
+        "agile",
+        "scrum",
+        "devops",
+        "ci/cd",
+        "microservices",
+        "api",
     ]
 
     # Experience level indicators
@@ -244,18 +294,20 @@ def extract_basic_job_features(job: dict) -> dict[str, Any]:
         "junior": ["junior", "graduate", "entry level", "1-2 years", "early career"],
         "mid": ["mid", "intermediate", "3-5 years", "4+ years", "experienced"],
         "senior": ["senior", "lead", "5+ years", "7+ years", "expert", "principal"],
-        "management": ["manager", "director", "head of", "vp", "cto", "lead team"]
+        "management": ["manager", "director", "head of", "vp", "cto", "lead team"],
     }
 
     # Remote work indicators
     remote_indicators = {
         "remote": ["remote", "work from home", "wfh", "distributed"],
         "hybrid": ["hybrid", "flexible", "2-3 days", "part remote"],
-        "onsite": ["office", "on-site", "in person", "london office"]
+        "onsite": ["office", "on-site", "in person", "london office"],
     }
 
     # Extract features
-    found_tech = [tech for tech in tech_keywords if tech in description or tech in title]
+    found_tech = [
+        tech for tech in tech_keywords if tech in description or tech in title
+    ]
 
     experience_level = "not_specified"
     for level, keywords in experience_indicators.items():
@@ -274,11 +326,16 @@ def extract_basic_job_features(job: dict) -> dict[str, Any]:
     salary_min = job.get("salary_min")
     salary_max = job.get("salary_max")
 
-    if salary_min and salary_max and isinstance(salary_min, int | float) and isinstance(salary_max, int | float):
+    if (
+        salary_min
+        and salary_max
+        and isinstance(salary_min, int | float)
+        and isinstance(salary_max, int | float)
+    ):
         salary_info = {
             "min": salary_min,
             "max": salary_max,
-            "average": (salary_min + salary_max) / 2
+            "average": (salary_min + salary_max) / 2,
         }
 
     return {
@@ -287,10 +344,19 @@ def extract_basic_job_features(job: dict) -> dict[str, Any]:
         "remote_policy": remote_policy,
         "salary_info": salary_info,
         "description_length": len(job.get("description", "")),
-        "has_benefits": any(benefit in description for benefit in [
-            "pension", "healthcare", "insurance", "holiday", "flexible", "learning"
-        ])
+        "has_benefits": any(
+            benefit in description
+            for benefit in [
+                "pension",
+                "healthcare",
+                "insurance",
+                "holiday",
+                "flexible",
+                "learning",
+            ]
+        ),
     }
+
 
 def create_analysis_framework(job: dict) -> JobAnalysisFramework:
     """Create a structured framework for Claude to analyse the job."""
@@ -343,36 +409,38 @@ def create_analysis_framework(job: dict) -> JobAnalysisFramework:
         "technical_skills": [
             "Exact match for required skills",
             "Related/transferable skills",
-            "Learning curve for missing skills"
+            "Learning curve for missing skills",
         ],
         "experience": [
             "Years of experience alignment",
             "Relevant project experience",
-            "Industry experience match"
+            "Industry experience match",
         ],
         "cultural_fit": [
             "Company size preference",
             "Industry alignment",
-            "Remote work policy match"
+            "Remote work policy match",
         ],
         "growth_potential": [
             "Career progression opportunities",
             "Skill development prospects",
-            "Learning and training offered"
-        ]
+            "Learning and training offered",
+        ],
     }
 
     return JobAnalysisFramework(
-        job_title=job.get('title', ''),
-        job_description=job.get('description', '')[:800],
-        company=job.get('company', ''),
+        job_title=job.get("title", ""),
+        job_description=job.get("description", "")[:800],
+        company=job.get("company", ""),
         analysis_prompts=analysis_prompts,
-        scoring_criteria=scoring_criteria
+        scoring_criteria=scoring_criteria,
     )
+
 
 # =============================================================================
 # Initialize MCP Server and Database
 # =============================================================================
+
 
 def initialize_app():
     """Initialize the MCP server and database with proper error handling."""
@@ -384,30 +452,36 @@ def initialize_app():
         db = JobDatabase()
 
         # Initialization success
-        startup_logger.info("Job Agent initialized successfully. Database: %s", db.db_path)
+        startup_logger.info(
+            "Job Agent initialized successfully. Database: %s", db.db_path
+        )
         return mcp, db
 
     except Exception as e:
         startup_logger.critical("Failed to initialize Job Agent: %s", e, exc_info=True)
         raise
 
+
 # Initialize at module level
 try:
     mcp, db = initialize_app()
 except Exception as e:
-    startup_logger.critical("Critical error during initialization: %s", e, exc_info=True)
+    startup_logger.critical(
+        "Critical error during initialization: %s", e, exc_info=True
+    )
     sys.exit(1)
 
 # =============================================================================
 # MCP Tools (Claude Desktop Optimized)
 # =============================================================================
 
+
 @mcp.tool()
 async def search_jobs_with_analysis_framework(
     query: str,
     location: str = "London",
     max_results: int = 15,
-    include_analysis_framework: bool = True
+    include_analysis_framework: bool = True,
 ) -> list[dict[str, Any]]:
     """
     Search for jobs and provide structured analysis frameworks for Claude to process.
@@ -445,7 +519,7 @@ async def search_jobs_with_analysis_framework(
         unique_jobs = []
         for job in all_jobs:
             key = f"{job.get('company', '').lower()}_{job.get('title', '').lower()}"
-            if key not in seen and job.get('title') and job.get('company'):
+            if key not in seen and job.get("title") and job.get("company"):
                 seen.add(key)
                 unique_jobs.append(job)
 
@@ -459,10 +533,7 @@ async def search_jobs_with_analysis_framework(
                 # Extract basic features
                 features = extract_basic_job_features(job)
 
-                enhanced_job = {
-                    **job,
-                    "extracted_features": features
-                }
+                enhanced_job = {**job, "extracted_features": features}
 
                 # Add an analysis framework if requested
                 if include_analysis_framework:
@@ -481,7 +552,7 @@ async def search_jobs_with_analysis_framework(
             with sqlite3.connect(db.db_path, timeout=10) as conn:
                 conn.execute(
                     "INSERT INTO job_searches (query, results_count) VALUES (?, ?)",
-                    (query, len(enhanced_jobs))
+                    (query, len(enhanced_jobs)),
                 )
                 conn.commit()
         except Exception as e2:
@@ -494,12 +565,13 @@ async def search_jobs_with_analysis_framework(
         print(f"Error in search_jobs_with_analysis_framework: {e3}")
         return {"error": f"Search failed: {str(e3)}"}
 
+
 @mcp.tool()
 async def create_job_compatibility_template(
     user_skills: list[str],
     experience_years: int,
     salary_expectation: int | None = None,
-    remote_preference: str = "hybrid"
+    remote_preference: str = "hybrid",
 ) -> dict[str, Any]:
     """
     Create a compatibility analysis template that Claude can use to score jobs.
@@ -531,19 +603,56 @@ async def create_job_compatibility_template(
             "salary_expectation": salary_expectation,
             "remote_preference": remote_preference,
             "skill_levels": {
-                "programming_languages": [s for s in user_skills if s.lower() in [
-                    "python", "javascript", "java", "c++", "c#", "ruby", "php", "go", "rust"
-                ]],
-                "frameworks": [s for s in user_skills if s.lower() in [
-                    "react", "vue", "angular", "django", "flask", "spring", "laravel"
-                ]],
-                "tools": [s for s in user_skills if s.lower() in [
-                    "aws", "docker", "kubernetes", "git", "jenkins", "terraform"
-                ]],
-                "databases": [s for s in user_skills if s.lower() in [
-                    "sql", "postgresql", "mysql", "mongodb", "redis", "elasticsearch"
-                ]]
-            }
+                "programming_languages": [
+                    s
+                    for s in user_skills
+                    if s.lower()
+                    in [
+                        "python",
+                        "javascript",
+                        "java",
+                        "c++",
+                        "c#",
+                        "ruby",
+                        "php",
+                        "go",
+                        "rust",
+                    ]
+                ],
+                "frameworks": [
+                    s
+                    for s in user_skills
+                    if s.lower()
+                    in [
+                        "react",
+                        "vue",
+                        "angular",
+                        "django",
+                        "flask",
+                        "spring",
+                        "laravel",
+                    ]
+                ],
+                "tools": [
+                    s
+                    for s in user_skills
+                    if s.lower()
+                    in ["aws", "docker", "kubernetes", "git", "jenkins", "terraform"]
+                ],
+                "databases": [
+                    s
+                    for s in user_skills
+                    if s.lower()
+                    in [
+                        "sql",
+                        "postgresql",
+                        "mysql",
+                        "mongodb",
+                        "redis",
+                        "elasticsearch",
+                    ]
+                ],
+            },
         }
 
         # Compatibility scoring template
@@ -556,8 +665,8 @@ async def create_job_compatibility_template(
                         "8-9": "Excellent match - has most required skills + some nice-to-haves",
                         "6-7": "Good match - has core skills, missing 1-2 requirements",
                         "4-5": "Moderate match - has transferable skills, some learning needed",
-                        "1-3": "Low match - significant skill gaps, major learning required"
-                    }
+                        "1-3": "Low match - significant skill gaps, major learning required",
+                    },
                 },
                 "experience_level": {
                     "weight": 25,
@@ -566,8 +675,8 @@ async def create_job_compatibility_template(
                         "8-9": "Slightly over/under qualified but strong fit",
                         "6-7": "Some experience gap but manageable",
                         "4-5": "Noticeable experience gap",
-                        "1-3": "Significant experience mismatch"
-                    }
+                        "1-3": "Significant experience mismatch",
+                    },
                 },
                 "salary_alignment": {
                     "weight": 20,
@@ -576,8 +685,8 @@ async def create_job_compatibility_template(
                         "8-9": "Salary close to expectations",
                         "6-7": "Salary somewhat below expectations",
                         "4-5": "Salary notably below expectations",
-                        "1-3": "Salary significantly below expectations"
-                    }
+                        "1-3": "Salary significantly below expectations",
+                    },
                 },
                 "work_arrangement": {
                     "weight": 15,
@@ -586,15 +695,15 @@ async def create_job_compatibility_template(
                         "8-9": "Good work arrangement fit",
                         "6-7": "Acceptable work arrangement",
                         "4-5": "Work arrangement not ideal",
-                        "1-3": "Work arrangement doesn't match preference"
-                    }
-                }
+                        "1-3": "Work arrangement doesn't match preference",
+                    },
+                },
             },
             "analysis_prompts": {
                 "skill_analysis": "Compare the candidate's skills against job requirements. Identify exact matches, transferable skills, and gaps.",
                 "experience_analysis": "Evaluate if candidate's experience level aligns with job requirements and responsibilities.",
                 "growth_potential": "Assess learning opportunities and career growth potential in this role.",
-                "red_flags": "Identify any concerning aspects like unrealistic expectations, poor work-life balance indicators, or unclear requirements."
+                "red_flags": "Identify any concerning aspects like unrealistic expectations, poor work-life balance indicators, or unclear requirements.",
             },
             "output_format": {
                 "compatibility_score": "Overall score 1-10",
@@ -602,8 +711,8 @@ async def create_job_compatibility_template(
                 "strengths": "List of candidate's advantages for this role",
                 "gaps": "List of missing skills or experience",
                 "recommendation": "High/Medium/Low application priority with reasoning",
-                "application_tips": "Specific advice for applying to this role"
-            }
+                "application_tips": "Specific advice for applying to this role",
+            },
         }
 
         return {
@@ -613,12 +722,13 @@ async def create_job_compatibility_template(
                 "step_1": "Use this template to analyze each job posting",
                 "step_2": "Score each criteria according to the guides",
                 "step_3": "Calculate weighted average for overall compatibility",
-                "step_4": "Provide specific recommendations and application tips"
-            }
+                "step_4": "Provide specific recommendations and application tips",
+            },
         }
 
     except Exception as e:
         return {"error": f"Failed to create compatibility template: {str(e)}"}
+
 
 @mcp.tool()
 async def track_job_application(
@@ -627,7 +737,7 @@ async def track_job_application(
     position: str,
     application_date: str,
     status: str = "applied",
-    notes: str = ""
+    notes: str = "",
 ) -> dict[str, Any]:
     """
     Track a job application with follow-up reminders and next steps.
@@ -658,35 +768,45 @@ async def track_job_application(
                 cursor = conn.cursor()
 
                 # First, store/update job info
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT OR REPLACE INTO jobs (title, company, url)
                     VALUES (?, ?, ?)
-                ''', (position, company_name, job_url))
+                """,
+                    (position, company_name, job_url),
+                )
 
                 job_id = cursor.lastrowid
 
                 # If this was a REPLACE operation (not INSERT), we need to get the actual job_id
                 if cursor.rowcount != 1:
                     # This was a REPLACE, need to get the actual job_id
-                    cursor.execute('SELECT id FROM jobs WHERE url = ?', (job_url,))
+                    cursor.execute("SELECT id FROM jobs WHERE url = ?", (job_url,))
                     if result := cursor.fetchone():
                         job_id = result[0]
 
                 # Store application tracking
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT INTO applications (job_id, status, applied_date, notes)
                     VALUES (?, ?, ?, ?)
-                ''', (job_id, status, application_date, notes))
+                """,
+                    (job_id, status, application_date, notes),
+                )
 
                 conn.commit()
                 application_id = cursor.lastrowid
 
         except sqlite3.Error as e:
             # Log error but continue with response
-            app_logger.error("Database error during application tracking: %s", e, exc_info=True)
+            app_logger.error(
+                "Database error during application tracking: %s", e, exc_info=True
+            )
             application_id = -1  # Indicate database failure
         except Exception as e:
-            app_logger.error("Unexpected error during application tracking: %s", e, exc_info=True)
+            app_logger.error(
+                "Unexpected error during application tracking: %s", e, exc_info=True
+            )
             application_id = -1
 
         # Calculate follow-up dates
@@ -706,20 +826,20 @@ async def track_job_application(
                 "Research hiring manager on LinkedIn",
                 "Set calendar reminder for follow-up in 1 week",
                 "Prepare for potential screening call",
-                "Research company recent news and developments"
+                "Research company recent news and developments",
             ],
             "interview_scheduled": [
                 "Research interviewer backgrounds on LinkedIn",
                 "Prepare technical examples relevant to role",
                 "Practice common interview questions",
-                "Plan interview outfit and logistics"
+                "Plan interview outfit and logistics",
             ],
             "interviewed": [
                 "Send thank-you email within 24 hours",
                 "Reflect on interview questions for future prep",
                 "Follow up if no response within their timeline",
-                "Continue applying to other opportunities"
-            ]
+                "Continue applying to other opportunities",
+            ],
         }
 
         return {
@@ -730,31 +850,39 @@ async def track_job_application(
                 "status": status,
                 "applied_date": application_date,
                 "follow_up_date": follow_up_date.strftime("%Y-%m-%d"),
-                "reminder_date": reminder_date.strftime("%Y-%m-%d")
+                "reminder_date": reminder_date.strftime("%Y-%m-%d"),
             },
-            "next_actions": next_actions.get(status, [
-                "Update application status as situation develops",
-                "Continue job search activities",
-                "Network within the industry"
-            ]),
+            "next_actions": next_actions.get(
+                status,
+                [
+                    "Update application status as situation develops",
+                    "Continue job search activities",
+                    "Network within the industry",
+                ],
+            ),
             "timeline": {
                 "application_submitted": application_date,
-                "expected_response": (apply_date + timedelta(days=14)).strftime("%Y-%m-%d"),
+                "expected_response": (apply_date + timedelta(days=14)).strftime(
+                    "%Y-%m-%d"
+                ),
                 "follow_up_if_no_response": follow_up_date.strftime("%Y-%m-%d"),
-                "move_on_date": (apply_date + timedelta(days=30)).strftime("%Y-%m-%d")
+                "move_on_date": (apply_date + timedelta(days=30)).strftime("%Y-%m-%d"),
             },
             "tips": [
                 "Keep detailed notes of all interactions",
                 "Set calendar reminders for follow-ups",
                 "Research company and role continuously",
                 "Prepare for multiple interview rounds",
-                "Keep applying to other opportunities"
+                "Keep applying to other opportunities",
             ],
-            "database_status": "success" if application_id and application_id > 0 else "failed"
+            "database_status": (
+                "success" if application_id and application_id > 0 else "failed"
+            ),
         }
 
     except Exception as e:
         return {"error": f"Failed to track application: {str(e)}"}
+
 
 @mcp.tool()
 async def get_application_status_summary() -> dict[str, Any]:
@@ -771,12 +899,14 @@ async def get_application_status_summary() -> dict[str, Any]:
             cursor = conn.cursor()
 
             # Get all applications with job details
-            cursor.execute('''
+            cursor.execute(
+                """
                 SELECT a.id, j.title, j.company, j.url, a.status, a.applied_date, a.notes
                 FROM applications a
                 LEFT JOIN jobs j ON a.job_id = j.id
                 ORDER BY a.applied_date DESC
-            ''')
+            """
+            )
 
             applications = []
             for row in cursor.fetchall():
@@ -789,39 +919,56 @@ async def get_application_status_summary() -> dict[str, Any]:
                 except (ValueError, TypeError):
                     days_since = 0
 
-                applications.append({
-                    "id": app_id,
-                    "title": title or "Unknown Position",
-                    "company": company or "Unknown Company",
-                    "url": url or "",
-                    "status": status,
-                    "applied_date": applied_date,
-                    "days_since_application": days_since,
-                    "notes": notes or "",
-                    "needs_follow_up": days_since >= 7 and status == "applied"
-                })
+                applications.append(
+                    {
+                        "id": app_id,
+                        "title": title or "Unknown Position",
+                        "company": company or "Unknown Company",
+                        "url": url or "",
+                        "status": status,
+                        "applied_date": applied_date,
+                        "days_since_application": days_since,
+                        "notes": notes or "",
+                        "needs_follow_up": days_since >= 7 and status == "applied",
+                    }
+                )
 
             # Get status summary
-            cursor.execute('''
+            cursor.execute(
+                """
                 SELECT status, COUNT(*) as count
                 FROM applications
                 GROUP BY status
-            ''')
+            """
+            )
 
             status_summary = {row[0]: row[1] for row in cursor.fetchall()}
 
         # Identify actions needed
         follow_up_needed = [app for app in applications if app["needs_follow_up"]]
-        recent_applications = [app for app in applications if app["days_since_application"] <= 7]
+        recent_applications = [
+            app for app in applications if app["days_since_application"] <= 7
+        ]
 
         # Calculate success metrics safely
         total_apps = len(applications)
-        responded_apps = len([app for app in applications if app['status'] != 'applied'])
-        interview_apps = len([app for app in applications if 'interview' in app['status']])
+        responded_apps = len(
+            [app for app in applications if app["status"] != "applied"]
+        )
+        interview_apps = len(
+            [app for app in applications if "interview" in app["status"]]
+        )
 
         # Calculate average response time for responded applications
         if responded_apps > 0:
-            avg_response_time = sum(app['days_since_application'] for app in applications if app['status'] != 'applied') / responded_apps
+            avg_response_time = (
+                sum(
+                    app["days_since_application"]
+                    for app in applications
+                    if app["status"] != "applied"
+                )
+                / responded_apps
+            )
         else:
             avg_response_time = 0
 
@@ -854,10 +1001,7 @@ async def get_application_status_summary() -> dict[str, Any]:
 
 @mcp.tool()
 async def generate_application_templates(
-    job_title: str,
-    company_name: str,
-    job_description: str,
-    user_background: str
+    job_title: str, company_name: str, job_description: str, user_background: str
 ) -> dict[str, Any]:
     """
     Generate structured templates for job applications that Claude can customize.
@@ -887,7 +1031,7 @@ async def generate_application_templates(
             "remote_work": ["remote", "work from home", "hybrid"],
             "learning_budget": ["learning", "training", "courses", "development"],
             "pension": ["pension", "401k", "retirement"],
-            "stock_options": ["equity", "stock", "options", "shares"]
+            "stock_options": ["equity", "stock", "options", "shares"],
         }
 
         benefits_found.extend(
@@ -935,18 +1079,16 @@ async def generate_application_templates(
             With [X years] of experience in [relevant field] and expertise in [key skills from job],
             I am excited about the opportunity to contribute to [specific company goal/project mentioned in job]."
             """,
-
             "body_paragraphs": {
                 "experience_paragraph": "Highlight 2-3 most relevant experiences that directly match job requirements",
                 "skills_paragraph": "Demonstrate specific technical skills mentioned in job posting with examples",
-                "company_paragraph": "Show knowledge of company and why you want to work there specifically"
+                "company_paragraph": "Show knowledge of company and why you want to work there specifically",
             },
-
             "closing_paragraph": f"""
             Template: "I would welcome the opportunity to discuss how my background in [relevant area]
             and passion for [relevant field/mission] can contribute to {company_name}'s continued success.
             Thank you for considering my application."
-            """
+            """,
         }
 
         # Interview preparation framework
@@ -986,25 +1128,24 @@ async def generate_application_templates(
                 "priority_level": "Analyze job competitiveness and your fit to determine application urgency",
                 "follow_up_timeline": "Apply within 48 hours, follow up after 1 week if no response",
                 "networking_approach": "Research hiring manager and team members on LinkedIn",
-                "portfolio_preparation": "Prepare 2-3 relevant project examples that demonstrate required skills"
+                "portfolio_preparation": "Prepare 2-3 relevant project examples that demonstrate required skills",
             },
             "customization_checklist": [
                 "✓ Tailor CV to include keywords from job description",
                 "✓ Research company recent news and developments",
                 "✓ Prepare specific examples that match job requirements",
                 "✓ Practice explaining technical concepts clearly",
-                "✓ Prepare questions about role and company culture"
-            ]
+                "✓ Prepare questions about role and company culture",
+            ],
         }
 
     except Exception as e:
         return {"error": f"Failed to generate application templates: {str(e)}"}
 
+
 @mcp.tool()
 async def analyze_job_market_data(
-    location: str = "London",
-    job_category: str = "Technology",
-    timeframe_days: int = 30
+    location: str = "London", job_category: str = "Technology", timeframe_days: int = 30
 ) -> dict[str, Any]:
     """
     Analyse job market trends using stored search data and provide insights.
@@ -1023,14 +1164,16 @@ async def analyze_job_market_data(
             cursor = conn.cursor()
 
             # Get recent search patterns
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT query, COUNT(*) as search_count, AVG(results_count) as avg_results
                 FROM job_searches
                 WHERE search_date > datetime('now', '-{timeframe_days} days')
                 GROUP BY query
                 ORDER BY search_count DESC
                 LIMIT 10
-            ''')
+            """
+            )
 
             popular_searches = [
                 {"query": row[0], "search_count": row[1], "avg_results": row[2]}
@@ -1038,27 +1181,30 @@ async def analyze_job_market_data(
             ]
 
             # Get job data trends
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT company, COUNT(*) as job_count
                 FROM jobs
                 WHERE created_at > datetime('now', '-{timeframe_days} days')
                 GROUP BY company
                 ORDER BY job_count DESC
                 LIMIT 10
-            ''')
+            """
+            )
 
             top_hiring_companies = [
-                {"company": row[0], "job_count": row[1]}
-                for row in cursor.fetchall()
+                {"company": row[0], "job_count": row[1]} for row in cursor.fetchall()
             ]
 
             # Application tracking insights
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT status, COUNT(*) as count
                 FROM applications
                 WHERE applied_date > date('now', '-{timeframe_days} days')
                 GROUP BY status
-            ''')
+            """
+            )
 
             application_stats = {row[0]: row[1] for row in cursor.fetchall()}
 
@@ -1066,33 +1212,45 @@ async def analyze_job_market_data(
         market_insights = {
             "demand_indicators": {
                 "high_demand_skills": [
-                    "Python", "JavaScript", "React", "AWS", "Docker", "Kubernetes",
-                    "SQL", "Machine Learning", "Data Analysis", "DevOps"
+                    "Python",
+                    "JavaScript",
+                    "React",
+                    "AWS",
+                    "Docker",
+                    "Kubernetes",
+                    "SQL",
+                    "Machine Learning",
+                    "Data Analysis",
+                    "DevOps",
                 ],
                 "emerging_skills": [
-                    "AI/ML", "Cloud Computing", "Cybersecurity", "Blockchain",
-                    "Data Engineering", "Site Reliability Engineering"
+                    "AI/ML",
+                    "Cloud Computing",
+                    "Cybersecurity",
+                    "Blockchain",
+                    "Data Engineering",
+                    "Site Reliability Engineering",
                 ],
-                "skill_trends": "Based on job descriptions, cloud technologies and AI/ML skills show increasing demand"
+                "skill_trends": "Based on job descriptions, cloud technologies and AI/ML skills show increasing demand",
             },
             "salary_patterns": {
                 "entry_level": {"min": 35000, "max": 50000, "average": 42500},
                 "mid_level": {"min": 50000, "max": 80000, "average": 65000},
                 "senior_level": {"min": 80000, "max": 120000, "average": 95000},
                 "lead_level": {"min": 100000, "max": 150000, "average": 125000},
-                "note": "Salaries vary significantly by company size, industry, and specific skills"
+                "note": "Salaries vary significantly by company size, industry, and specific skills",
             },
             "remote_work_trends": {
                 "fully_remote": "25-30% of tech positions",
                 "hybrid": "50-60% of tech positions",
                 "onsite_only": "15-20% of tech positions",
-                "trend": "Hybrid work arrangements becoming the standard"
+                "trend": "Hybrid work arrangements becoming the standard",
             },
             "hiring_patterns": {
                 "peak_hiring_months": ["January", "February", "September", "October"],
                 "slow_periods": ["December", "July", "August"],
-                "application_response_time": "1-2 weeks for initial response, 3-4 weeks for full process"
-            }
+                "application_response_time": "1-2 weeks for initial response, 3-4 weeks for full process",
+            },
         }
 
         return {
@@ -1108,26 +1266,27 @@ async def analyze_job_market_data(
                 "Apply during peak hiring months for better response rates",
                 "Research company-specific benefits and culture",
                 "Network actively on LinkedIn and attend tech meetups",
-                "Keep skills updated with online courses and certifications"
+                "Keep skills updated with online courses and certifications",
             ],
             "job_search_strategy": {
                 "application_volume": "Apply to 10-15 relevant positions per week",
                 "quality_over_quantity": "Tailor each application to specific role requirements",
                 "follow_up_timeline": "Follow up after 1 week if no initial response",
                 "networking_importance": "40% of jobs are filled through networking",
-                "skill_development": "Continuous learning is essential in tech roles"
-            }
+                "skill_development": "Continuous learning is essential in tech roles",
+            },
         }
 
     except Exception as e:
         return {"error": f"Failed to analyze job market data: {str(e)}"}
+
 
 @mcp.tool()
 async def create_career_progression_framework(
     current_role: str,
     target_roles: list[str],
     current_skills: list[str],
-    timeline_months: int = 24
+    timeline_months: int = 24,
 ) -> dict[str, Any]:
     """
     Create a structured career progression framework that Claude can use to provide guidance.
@@ -1155,45 +1314,99 @@ async def create_career_progression_framework(
         skill_progressions = {
             "software_engineer": {
                 "junior_to_mid": {
-                    "technical": ["Advanced debugging", "Code review skills", "Testing frameworks", "CI/CD"],
+                    "technical": [
+                        "Advanced debugging",
+                        "Code review skills",
+                        "Testing frameworks",
+                        "CI/CD",
+                    ],
                     "soft": ["Communication", "Time management", "Basic mentoring"],
-                    "timeline": "12-18 months"
+                    "timeline": "12-18 months",
                 },
                 "mid_to_senior": {
-                    "technical": ["System design", "Architecture patterns", "Performance optimization", "Security"],
+                    "technical": [
+                        "System design",
+                        "Architecture patterns",
+                        "Performance optimization",
+                        "Security",
+                    ],
                     "soft": ["Leadership", "Technical mentoring", "Project planning"],
-                    "timeline": "18-36 months"
+                    "timeline": "18-36 months",
                 },
                 "senior_to_lead": {
-                    "technical": ["Large-scale systems", "Technology strategy", "Cross-team collaboration"],
-                    "soft": ["Team leadership", "Strategic thinking", "Stakeholder management"],
-                    "timeline": "24-48 months"
-                }
+                    "technical": [
+                        "Large-scale systems",
+                        "Technology strategy",
+                        "Cross-team collaboration",
+                    ],
+                    "soft": [
+                        "Team leadership",
+                        "Strategic thinking",
+                        "Stakeholder management",
+                    ],
+                    "timeline": "24-48 months",
+                },
             },
             "data_scientist": {
                 "junior_to_mid": {
-                    "technical": ["Advanced SQL", "Machine learning algorithms", "Data visualization", "Statistical analysis"],
-                    "soft": ["Business acumen", "Presentation skills", "Problem-solving"],
-                    "timeline": "12-24 months"
+                    "technical": [
+                        "Advanced SQL",
+                        "Machine learning algorithms",
+                        "Data visualization",
+                        "Statistical analysis",
+                    ],
+                    "soft": [
+                        "Business acumen",
+                        "Presentation skills",
+                        "Problem-solving",
+                    ],
+                    "timeline": "12-24 months",
                 },
                 "mid_to_senior": {
-                    "technical": ["MLOps", "Deep learning", "Big data technologies", "Model deployment"],
-                    "soft": ["Cross-functional collaboration", "Technical communication", "Project leadership"],
-                    "timeline": "18-36 months"
-                }
+                    "technical": [
+                        "MLOps",
+                        "Deep learning",
+                        "Big data technologies",
+                        "Model deployment",
+                    ],
+                    "soft": [
+                        "Cross-functional collaboration",
+                        "Technical communication",
+                        "Project leadership",
+                    ],
+                    "timeline": "18-36 months",
+                },
             },
             "product_manager": {
                 "junior_to_mid": {
-                    "technical": ["User research", "Data analysis", "Product analytics", "A/B testing"],
-                    "soft": ["Stakeholder management", "Communication", "Priority setting"],
-                    "timeline": "12-18 months"
+                    "technical": [
+                        "User research",
+                        "Data analysis",
+                        "Product analytics",
+                        "A/B testing",
+                    ],
+                    "soft": [
+                        "Stakeholder management",
+                        "Communication",
+                        "Priority setting",
+                    ],
+                    "timeline": "12-18 months",
                 },
                 "mid_to_senior": {
-                    "technical": ["Product strategy", "Market analysis", "Technical understanding", "Metrics definition"],
-                    "soft": ["Leadership", "Vision setting", "Cross-team collaboration"],
-                    "timeline": "18-30 months"
-                }
-            }
+                    "technical": [
+                        "Product strategy",
+                        "Market analysis",
+                        "Technical understanding",
+                        "Metrics definition",
+                    ],
+                    "soft": [
+                        "Leadership",
+                        "Vision setting",
+                        "Cross-team collaboration",
+                    ],
+                    "timeline": "18-30 months",
+                },
+            },
         }
 
         # Career path templates
@@ -1203,13 +1416,23 @@ async def create_career_progression_framework(
             # Determine progression path
             role_lower = target_role.lower()
             if "senior" in role_lower or "lead" in role_lower:
-                if ("engineer" in role_lower or "developer" in role_lower) and "data" not in role_lower and "product" not in role_lower:
-                    progression = skill_progressions["software_engineer"]["mid_to_senior"]
+                if (
+                    ("engineer" in role_lower or "developer" in role_lower)
+                    and "data" not in role_lower
+                    and "product" not in role_lower
+                ):
+                    progression = skill_progressions["software_engineer"][
+                        "mid_to_senior"
+                    ]
                 elif "data" in role_lower:
                     progression = skill_progressions["data_scientist"]["mid_to_senior"]
                 else:
                     progression = skill_progressions["product_manager"]["mid_to_senior"]
-            elif ("engineer" in role_lower or "developer" in role_lower) and "data" not in role_lower and "product" not in role_lower:
+            elif (
+                ("engineer" in role_lower or "developer" in role_lower)
+                and "data" not in role_lower
+                and "product" not in role_lower
+            ):
                 progression = skill_progressions["software_engineer"]["junior_to_mid"]
             elif "data" in role_lower:
                 progression = skill_progressions["data_scientist"]["junior_to_mid"]
@@ -1220,19 +1443,42 @@ async def create_career_progression_framework(
             required_technical = progression["technical"]
             required_soft = progression["soft"]
 
-            missing_technical = [skill for skill in required_technical if skill not in current_skills]
-            missing_soft = [skill for skill in required_soft if skill not in current_skills]
+            missing_technical = [
+                skill for skill in required_technical if skill not in current_skills
+            ]
+            missing_soft = [
+                skill for skill in required_soft if skill not in current_skills
+            ]
 
             # Create learning roadmap
             learning_roadmap = {
                 "immediate_focus": missing_technical[:2] + missing_soft[:1],
                 "medium_term": missing_technical[2:] + missing_soft[1:],
                 "learning_resources": {
-                    "online_courses": ["Coursera", "Udemy", "Pluralsight", "LinkedIn Learning"],
-                    "certifications": ["AWS", "Google Cloud", "Microsoft Azure", "Kubernetes"],
-                    "books": ["System Design Interview", "Clean Code", "Designing Data-Intensive Applications"],
-                    "practice": ["LeetCode", "HackerRank", "Personal projects", "Open source contributions"]
-                }
+                    "online_courses": [
+                        "Coursera",
+                        "Udemy",
+                        "Pluralsight",
+                        "LinkedIn Learning",
+                    ],
+                    "certifications": [
+                        "AWS",
+                        "Google Cloud",
+                        "Microsoft Azure",
+                        "Kubernetes",
+                    ],
+                    "books": [
+                        "System Design Interview",
+                        "Clean Code",
+                        "Designing Data-Intensive Applications",
+                    ],
+                    "practice": [
+                        "LeetCode",
+                        "HackerRank",
+                        "Personal projects",
+                        "Open source contributions",
+                    ],
+                },
             }
 
             career_path = {
@@ -1240,12 +1486,18 @@ async def create_career_progression_framework(
                 "estimated_timeline": progression["timeline"],
                 "skill_requirements": {
                     "technical": required_technical,
-                    "soft_skills": required_soft
+                    "soft_skills": required_soft,
                 },
                 "skill_gaps": {
                     "technical": missing_technical,
                     "soft_skills": missing_soft,
-                    "gap_percentage": (len(missing_technical) + len(missing_soft)) / (len(required_technical) + len(required_soft)) * 100 if (len(required_technical) + len(required_soft)) > 0 else 0
+                    "gap_percentage": (
+                        (len(missing_technical) + len(missing_soft))
+                        / (len(required_technical) + len(required_soft))
+                        * 100
+                        if (len(required_technical) + len(required_soft)) > 0
+                        else 0
+                    ),
                 },
                 "learning_roadmap": learning_roadmap,
                 "intermediate_steps": [
@@ -1253,8 +1505,8 @@ async def create_career_progression_framework(
                     f"Develop {missing_soft[0] if missing_soft else 'leadership'} skills",
                     f"Take on projects involving {target_role.lower()} responsibilities",
                     f"Seek mentorship from current {target_role}s",
-                    f"Apply for {target_role} positions when 70% ready"
-                ]
+                    f"Apply for {target_role} positions when 70% ready",
+                ],
             }
 
             career_paths.append(career_path)
@@ -1266,22 +1518,22 @@ async def create_career_progression_framework(
                 "Start learning highest-priority missing skills",
                 "Identify potential mentors in target roles",
                 "Update LinkedIn profile with career goals",
-                "Begin networking in target role communities"
+                "Begin networking in target role communities",
             ],
             "month_4_12": [
                 "Complete 2-3 relevant online courses or certifications",
                 "Start taking on responsibilities that align with target role",
                 "Build portfolio projects demonstrating required skills",
                 "Attend industry meetups and conferences",
-                "Seek feedback from managers on progression goals"
+                "Seek feedback from managers on progression goals",
             ],
             "month_13_24": [
                 "Apply for target roles when 70% skill-ready",
                 "Seek internal promotion opportunities",
                 "Complete advanced certifications",
                 "Mentor others to develop leadership skills",
-                "Build industry presence through content/speaking"
-            ]
+                "Build industry presence through content/speaking",
+            ],
         }
 
         return {
@@ -1295,28 +1547,42 @@ async def create_career_progression_framework(
                 "networking": "Connect with X professionals in target roles monthly",
                 "experience": "Take on X projects involving target role responsibilities",
                 "recognition": "Receive positive feedback on target role competencies",
-                "applications": "Apply to X target role positions when ready"
+                "applications": "Apply to X target role positions when ready",
             },
             "risk_mitigation": {
                 "backup_plans": "Identify alternative career paths if primary path stalls",
                 "skill_verification": "Get feedback from professionals in target roles",
                 "market_changes": "Stay updated on industry trends and skill demands",
-                "timeline_flexibility": "Adjust timeline based on learning pace and opportunities"
+                "timeline_flexibility": "Adjust timeline based on learning pace and opportunities",
             },
             "resources": {
                 "learning_platforms": ["Coursera", "Udemy", "Pluralsight", "edX"],
-                "networking": ["LinkedIn", "Industry meetups", "Professional associations"],
-                "mentorship": ["Company mentoring programs", "Industry mentors", "Online communities"],
-                "skill_assessment": ["Technical interviews", "Peer feedback", "Project reviews"]
-            }
+                "networking": [
+                    "LinkedIn",
+                    "Industry meetups",
+                    "Professional associations",
+                ],
+                "mentorship": [
+                    "Company mentoring programs",
+                    "Industry mentors",
+                    "Online communities",
+                ],
+                "skill_assessment": [
+                    "Technical interviews",
+                    "Peer feedback",
+                    "Project reviews",
+                ],
+            },
         }
 
     except Exception as e:
         return {"error": f"Failed to create career progression framework: {str(e)}"}
 
+
 # =============================================================================
 # Entry Point for Claude Desktop
 # =============================================================================
+
 
 def main():
     """Entry point for the MCP server."""
@@ -1324,10 +1590,13 @@ def main():
         main_logger.info("Starting Claude Job Search Agent...")
         mcp.run()
     except KeyboardInterrupt:
-        main_logger.info("Received shutdown signal, shutting down Claude Job Search Agent...")
+        main_logger.info(
+            "Received shutdown signal, shutting down Claude Job Search Agent..."
+        )
     except Exception as e:
         main_logger.critical("Critical error running MCP server: %s", e, exc_info=True)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

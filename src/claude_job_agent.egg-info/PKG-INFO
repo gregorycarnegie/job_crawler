@@ -26,7 +26,7 @@ Requires-Dist: httpx>=0.25.0
 Requires-Dist: aiohttp>=3.12.13
 Requires-Dist: beautifulsoup4>=4.13.4
 Requires-Dist: lxml>=5.4.0
-Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: python-dotenv>=1.1.1
 Requires-Dist: pydantic>=2.0.0
 Requires-Dist: python-dateutil>=2.8.0
 Provides-Extra: dev
@@ -60,7 +60,7 @@ A powerful job search automation tool designed specifically for Claude Desktop, 
 ### Core Functionality
 
 - **Multi-Source Job Aggregation** - Search across multiple job platforms (Adzuna, with extensible architecture)
-- **Intelligent Job Analysis** - Structured frameworks for Claude to analyze job compatibility
+- **Intelligent Job Analysis** - Structured frameworks for Claude to analyse job compatibility
 - **Application Tracking** - Comprehensive tracking system with follow-up reminders
 - **Career Progression Planning** - Personalized roadmaps and skill gap analysis
 - **Market Intelligence** - Job market trends and salary insights
@@ -394,7 +394,7 @@ Structured templates for consistent job evaluation:
 
 ### Common Issues
 
-**1. Database Permission Errors**
+#### 1. Database Permission Errors
 
 ```bash
 # Fix database permissions
@@ -402,21 +402,21 @@ chmod 664 data/jobs.db
 chown user:group data/jobs.db
 ```
 
-**2. API Rate Limiting**
+#### 2. API Rate Limiting
 
 ```bash
 # Check API usage in logs
 tail -f logs/api_usage.log
 ```
 
-**3. Claude Desktop Connection Issues**
+#### 3. Claude Desktop Connection Issues
 
 ```bash
 # Validate MCP configuration
 python -c "from src.claude_job_agent.main import mcp; print('MCP server loaded successfully')"
 ```
 
-**4. Missing Dependencies**
+#### 4. Missing Dependencies
 
 ```bash
 # Install all dependencies
@@ -482,4 +482,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for the Claude Desktop community**
+## Made with ❤️ for the Claude Desktop community
