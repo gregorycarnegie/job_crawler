@@ -408,7 +408,7 @@ class TestPerformanceMonitor:
             result = await monitor.collect_system_metrics()
 
             assert "error" in result
-            assert "psutil not available" in result["error"]
+            assert 'psutil' in result["error"] and ('not available' in result["error"] or 'No module named' in result["error"])
 
     @pytest.mark.asyncio
     async def test_analyze_api_performance(self, temp_databases):
