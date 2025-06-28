@@ -87,28 +87,23 @@ class MonitoringService:
             )
 
             with sqlite3.connect(self.health_checker.metrics_db) as conn:
-                self._extracted_from_cleanup_old_metrics_7(conn, cutoff_date)
+                conn.execute("DELETE FROM health_checks WHERE timestamp < ?", (cutoff_date,))
+                conn.execute("DELETE FROM api_metrics WHERE timestamp < ?", (cutoff_date,))
+                conn.execute(
+                    "DELETE FROM performance_metrics WHERE timestamp < ?", (cutoff_date,)
+                )
+
+                # Keep error logs for longer
+                error_cutoff = datetime.now() - timedelta(
+                    days=MonitoringConfig.METRICS_RETENTION_DAYS * 2
+                )
+                conn.execute("DELETE FROM error_logs WHERE timestamp < ?", (error_cutoff,))
+
+                conn.commit()
             self.logger.info("Old metrics cleaned up")
 
         except Exception as e:
             self.logger.error(f"Metrics cleanup failed: {e}")
-
-    # TODO Rename this here and in `cleanup_old_metrics`
-    @staticmethod
-    def _extracted_from_cleanup_old_metrics_7(conn, cutoff_date):
-        conn.execute("DELETE FROM health_checks WHERE timestamp < ?", (cutoff_date,))
-        conn.execute("DELETE FROM api_metrics WHERE timestamp < ?", (cutoff_date,))
-        conn.execute(
-            "DELETE FROM performance_metrics WHERE timestamp < ?", (cutoff_date,)
-        )
-
-        # Keep error logs for longer
-        error_cutoff = datetime.now() - timedelta(
-            days=MonitoringConfig.METRICS_RETENTION_DAYS * 2
-        )
-        conn.execute("DELETE FROM error_logs WHERE timestamp < ?", (error_cutoff,))
-
-        conn.commit()
 
     def rotate_logs(self):
         """Rotate log files."""

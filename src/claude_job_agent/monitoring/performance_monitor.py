@@ -2,6 +2,7 @@
 # Performance Monitor
 # =============================================================================
 
+import importlib.util
 import logging
 import sqlite3
 from datetime import datetime
@@ -19,9 +20,9 @@ class PerformanceMonitor:
         """Collect system performance metrics - FIXED VERSION."""
         try:
             # FIXED: Better psutil handling
-            try:
+            if importlib.util.find_spec("psutil") is not None:
                 import psutil
-            except ImportError:
+            else:
                 self.logger.warning("psutil not installed, skipping system metrics")
                 return {"error": "psutil not available"}
 

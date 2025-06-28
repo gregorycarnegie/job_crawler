@@ -15,6 +15,7 @@ Usage:
 
 
 import argparse
+import importlib.util
 import os
 import subprocess
 import sys
@@ -102,13 +103,10 @@ def run_main_tests(verbose=False):
 
     test_command = "pytest tests/test_main.py" + (" -v" if verbose else " -q")
 
-    # CRITICAL FIX: Check if pytest-cov is available before adding coverage
-    try:
-        import pytest_cov
-
+    if importlib.util.find_spec("pytest_cov") is not None:
         test_command += " --cov=main --cov-report=term-missing"
         print("ℹ️  Running with coverage reporting")
-    except ImportError:
+    else:
         print("ℹ️  pytest-cov not installed, running tests without coverage")
         print("    Install with: pip install pytest-cov")
 
@@ -213,7 +211,7 @@ def run_syntax_checks():
             print("✅ main.py syntax check passed")
             checks.append(True)
         else:
-            _extracted_from_run_syntax_checks_19(
+            print_syntax_check_result(
                 "❌ main.py syntax check failed", result, checks
             )
     except Exception as e:
@@ -231,7 +229,7 @@ def run_syntax_checks():
             print("✅ monitor.py syntax check passed")
             checks.append(True)
         else:
-            _extracted_from_run_syntax_checks_19(
+            print_syntax_check_result(
                 "❌ monitor.py syntax check failed", result, checks
             )
     except Exception as e:
@@ -263,8 +261,7 @@ def run_syntax_checks():
     return all(checks)
 
 
-# TODO Rename this here and in `run_syntax_checks`
-def _extracted_from_run_syntax_checks_19(arg0, result, checks):
+def print_syntax_check_result(arg0, result, checks):
     print(arg0)
     print(result.stderr)
     checks.append(False)
@@ -487,29 +484,24 @@ def main():
     elif args.monitor:
         results["Monitor Tests"] = run_monitor_tests(args.verbose)
     else:
-        _extracted_from_main_36(results, args)
+        # Run all tests
+        results["Database Test"] = create_test_database()
+        results["MCP Validation"] = run_mcp_validation()
+
+        if not args.no_api:
+            results["API Connectivity"] = test_api_connectivity()
+
+        results["Main Agent Tests"] = run_main_tests(args.verbose)
+        results["Monitor Tests"] = run_monitor_tests(args.verbose)
+
+        if not args.no_integration:
+            results["Integration Tests"] = run_integration_tests(args.verbose)
+            results["Performance Tests"] = run_performance_tests(args.verbose)
     # Generate a final report
     success = generate_test_report(results)
 
     # Exit with appropriate code
     sys.exit(0 if success else 1)
-
-
-# TODO Rename this here and in `main`
-def _extracted_from_main_36(results, args):
-    # Run all tests
-    results["Database Test"] = create_test_database()
-    results["MCP Validation"] = run_mcp_validation()
-
-    if not args.no_api:
-        results["API Connectivity"] = test_api_connectivity()
-
-    results["Main Agent Tests"] = run_main_tests(args.verbose)
-    results["Monitor Tests"] = run_monitor_tests(args.verbose)
-
-    if not args.no_integration:
-        results["Integration Tests"] = run_integration_tests(args.verbose)
-        results["Performance Tests"] = run_performance_tests(args.verbose)
 
 
 if __name__ == "__main__":
