@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: claude-job-agent
-Version: 2.0.0
+Version: 2.1.0
 Summary: Claude Desktop optimized job search agent with intelligent frameworks (no external AI API costs)
 Author-email: Your Name <your.email@example.com>
 License: MIT
@@ -21,14 +21,25 @@ Classifier: Topic :: Office/Business
 Classifier: Topic :: Communications
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
-Requires-Dist: mcp>=1.9.4
+Requires-Dist: mcp==1.16.0
 Requires-Dist: httpx>=0.25.0
-Requires-Dist: aiohttp>=3.12.13
-Requires-Dist: beautifulsoup4>=4.13.4
-Requires-Dist: lxml>=5.4.0
+Requires-Dist: aiohttp==3.12.15
+Requires-Dist: beautifulsoup4==4.14.2
+Requires-Dist: lxml==6.0.2
 Requires-Dist: python-dotenv>=1.1.1
-Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pydantic==2.11.9
 Requires-Dist: python-dateutil>=2.8.0
+Requires-Dist: pandas==2.3.3
+Requires-Dist: numpy==2.3.3
+Requires-Dist: pytest==8.4.2
+Requires-Dist: pytest-asyncio==1.2.0
+Requires-Dist: pytest-cov==7.0.0
+Requires-Dist: black==25.9.0
+Requires-Dist: mypy==1.18.2
+Requires-Dist: isort==6.1.0
+Requires-Dist: psutil==7.1.0
+Requires-Dist: playwright==1.55.0
+Requires-Dist: selenium==4.36.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=1.0.0; extra == "dev"
@@ -38,14 +49,14 @@ Requires-Dist: flake8>=7.3.0; extra == "dev"
 Requires-Dist: mypy>=1.16.1; extra == "dev"
 Requires-Dist: isort>=6.0.1; extra == "dev"
 Provides-Extra: analysis
-Requires-Dist: pandas>=2.3.0; extra == "analysis"
-Requires-Dist: numpy>=2.3.1; extra == "analysis"
+Requires-Dist: pandas>=2.3.3; extra == "analysis"
+Requires-Dist: numpy>=2.3.3; extra == "analysis"
 Provides-Extra: scraping
-Requires-Dist: requests>=2.31.0; extra == "scraping"
+Requires-Dist: requests>=2.32.5; extra == "scraping"
 Requires-Dist: playwright>=1.40.0; extra == "scraping"
 Requires-Dist: selenium>=4.15.0; extra == "scraping"
 Provides-Extra: monitoring
-Requires-Dist: psutil>=7.0.0; extra == "monitoring"
+Requires-Dist: psutil>=7.1.0; extra == "monitoring"
 Provides-Extra: all
 Requires-Dist: claude-job-agent[analysis,dev,monitoring,scraping]; extra == "all"
 

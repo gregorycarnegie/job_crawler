@@ -1,18 +1,29 @@
-mcp>=1.9.4
+mcp==1.16.0
 httpx>=0.25.0
-aiohttp>=3.12.13
-beautifulsoup4>=4.13.4
-lxml>=5.4.0
+aiohttp==3.12.15
+beautifulsoup4==4.14.2
+lxml==6.0.2
 python-dotenv>=1.1.1
-pydantic>=2.0.0
+pydantic==2.11.9
 python-dateutil>=2.8.0
+pandas==2.3.3
+numpy==2.3.3
+pytest==8.4.2
+pytest-asyncio==1.2.0
+pytest-cov==7.0.0
+black==25.9.0
+mypy==1.18.2
+isort==6.1.0
+psutil==7.1.0
+playwright==1.55.0
+selenium==4.36.0
 
 [all]
 claude-job-agent[analysis,dev,monitoring,scraping]
 
 [analysis]
-pandas>=2.3.0
-numpy>=2.3.1
+pandas>=2.3.3
+numpy>=2.3.3
 
 [dev]
 pytest>=7.0.0
@@ -24,9 +35,9 @@ mypy>=1.16.1
 isort>=6.0.1
 
 [monitoring]
-psutil>=7.0.0
+psutil>=7.1.0
 
 [scraping]
-requests>=2.31.0
+requests>=2.32.5
 playwright>=1.40.0
 selenium>=4.15.0
