@@ -512,7 +512,7 @@ async def search_jobs_with_analysis_framework(
             adzuna_jobs = await search_adzuna_jobs(query, location, max_results)
             all_jobs.extend(adzuna_jobs)
         except Exception as e0:
-            print(f"Adzuna search error: {e0}")
+            search_logger.error("Adzuna search error: %s", e0, exc_info=True)
 
         # Remove duplicates based on company + title
         seen = set()
@@ -543,7 +543,7 @@ async def search_jobs_with_analysis_framework(
                 enhanced_jobs.append(enhanced_job)
 
             except Exception as e1:
-                print(f"Error enhancing job {job.get('title', 'Unknown')}: {e1}")
+                search_logger.warning("Error enhancing job %s: %s", job.get('title', 'Unknown'), e1)
                 # Include the job without enhancement rather than skipping
                 enhanced_jobs.append(job)
 
@@ -562,7 +562,7 @@ async def search_jobs_with_analysis_framework(
         return enhanced_jobs
 
     except Exception as e3:
-        print(f"Error in search_jobs_with_analysis_framework: {e3}")
+        search_logger.error("Error in search_jobs_with_analysis_framework: %s", e3, exc_info=True)
         return {"error": f"Search failed: {str(e3)}"}
 
 

@@ -87,7 +87,7 @@ class LoggingConfig:
 
     def create_console_handler(self) -> logging.Handler:
         """Create console handler with appropriate formatting."""
-        handler = logging.StreamHandler(sys.stdout)
+        handler = logging.StreamHandler(sys.stderr)
 
         if self.enable_colors:
             handler.setFormatter(self.get_formatter("colored"))

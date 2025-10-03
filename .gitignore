@@ -1,6 +1,7 @@
 /uv.lock
 .idea/*
 __pycache__/*
+.claude/
 data/
 backups/
 .env
